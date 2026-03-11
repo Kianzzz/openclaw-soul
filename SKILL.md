@@ -370,4 +370,4 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 
 ---
 
-_openclaw-soul v1.1.0 — Give your AI a soul that grows._
+_openclaw-soul v1.2.0 — Zero-dependency deployment with three-level fallback. Give your AI a soul that grows._
