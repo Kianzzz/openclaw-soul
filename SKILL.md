@@ -117,41 +117,93 @@ cp "$WORKSPACE/{filename}" "$WORKSPACE/{filename}.backup.$(date +%Y%m%d-%H%M%S)"
 
 ---
 
-## §5 [REQUIRED] 依赖 Skill 安装
+## §5 [REQUIRED] 依赖 Skill 安装（三级 Fallback）
 
-### 5a. EvoClaw
+### 5a. 检查 clawhub 可用性
+
+```bash
+which clawhub || test -f ~/.openclaw/bin/clawhub
+CLAWHUB_AVAILABLE=$?
+```
+
+记录 clawhub 是否可用。
+
+### 5b. 安装 EvoClaw
 
 检查 `$WORKSPACE/skills/evoclaw/SKILL.md` 是否存在：
 
-- **已安装** → 跳过，告知用户
-- **未安装** → 执行：
-  ```bash
-  clawhub install evoclaw --force
-  ```
-  `--force` 是因为 VirusTotal 可能误报，该 skill 已经过安全审查。
+**已安装** → 跳过，告知用户
 
-### 5b. Self-Improving Agent
+**未安装** → 按优先级尝试：
+
+1. **Level 1 - clawhub 安装**（如果可用）
+   ```bash
+   clawhub install evoclaw --force
+   ```
+   如果成功，告知用户已从 clawhub 安装。
+
+2. **Level 2 - 离线 Fallback**（如果 Level 1 失败或 clawhub 不可用）
+   - 检查本 skill 所在目录的 `fallback/evoclaw/SKILL.md` 是否存在
+   - 如果存在：
+     ```bash
+     cp -r "$(dirname "$0")/../fallback/evoclaw" "$WORKSPACE/skills/"
+     ```
+   - 如果 fallback 文件也不存在，记录警告继续下一步
+
+3. **Level 3 - AGENTS.md 内联版本**
+   > "⚠️ EvoClaw 离线安装不可用。openclaw-soul 将使用 AGENTS.md 中的内联 Identity Evolution 机制。
+   >
+   > 功能对标：
+   > - 核心 Identity 变更需要用户批准
+   > - Working Style 和 User Understanding 可自主更新
+   > - SOUL.md 变更前自动创建快照
+   >
+   > 如需完整 EvoClaw：稍后执行 `clawhub install evoclaw` 或从服务器复制 fallback 文件。"
+
+### 5c. 安装 Self-Improving Agent
 
 检查 `$WORKSPACE/skills/self-improving/SKILL.md` 是否存在：
 
-- **已安装** → 跳过，告知用户
-- **未安装** → 执行：
-  ```bash
-  clawhub install self-improving --force
-  ```
+**已安装** → 跳过，告知用户
 
-### 5c. 验证
+**未安装** → 按优先级尝试：
 
-安装完成后，验证两个 skill 的 SKILL.md 文件存在且非空。
+1. **Level 1 - clawhub 安装**（如果可用）
+   ```bash
+   clawhub install self-improving --force
+   ```
+   如果成功，告知用户已从 clawhub 安装。
 
-### 5d. clawhub 不可用的回退方案
+2. **Level 2 - 离线 Fallback**（如果 Level 1 失败或 clawhub 不可用）
+   - 检查本 skill 所在目录的 `fallback/self-improving/SKILL.md` 是否存在
+   - 如果存在：
+     ```bash
+     cp -r "$(dirname "$0")/../fallback/self-improving" "$WORKSPACE/skills/"
+     ```
+   - 如果 fallback 文件也不存在，记录警告继续下一步
 
-如果 clawhub CLI 不可用：
+3. **Level 3 - AGENTS.md 内联版本**
+   > "⚠️ Self-Improving 离线安装不可用。openclaw-soul 将使用 AGENTS.md 中的内联 Self-Improving Protocol。
+   >
+   > 功能对标：
+   > - 加载已学规则：从 ~/self-improving/memory.md 读取
+   > - 用户纠正 → ~/self-improving/corrections.md
+   > - 同一模式重复 3 次 → 升级为永久规则
+   > - 30 天未使用 → 降级到 archive/
+   >
+   > 如需完整 Self-Improving Agent：稍后执行 `clawhub install self-improving` 或从服务器复制 fallback 文件。"
 
-> "clawhub 未找到。请手动安装依赖 skill：
-> 1. `clawhub install evoclaw`
-> 2. `clawhub install self-improving`
-> 安装完成后再次运行此 skill 继续配置。"
+### 5d. 验证结果
+
+安装完成后，逐项报告：
+
+```
+✓ EvoClaw: [installed from clawhub | installed from fallback | using inline version]
+✓ Self-Improving: [installed from clawhub | installed from fallback | using inline version]
+```
+
+- 如果两个都"using inline version"，提示用户可随时升级到完整版本
+- 如果有 fallback 或 Level 1 安装，验证对应的 SKILL.md 文件存在且非空
 
 ---
 

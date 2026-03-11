@@ -37,6 +37,24 @@ REQUIRED_DIRS = [
 
 DEPENDENCY_SKILLS = ["evoclaw", "self-improving"]
 
+FALLBACK_EVOCLAW_FILES = [
+    "SKILL.md",
+    "configure.md",
+]
+
+FALLBACK_SELF_IMPROVING_FILES = [
+    "SKILL.md",
+    "setup.md",
+    "learning.md",
+    "operations.md",
+    "scaling.md",
+    "boundaries.md",
+    "memory-template.md",
+    "corrections.md",
+    "reflections.md",
+    "memory.md",
+]
+
 
 def get_workspace_path():
     """Resolve workspace path from env or default."""
@@ -143,8 +161,48 @@ def check_installed_skills(workspace):
     return {"status": "info", "skills": installed}
 
 
+def check_fallback_dir(skill_root):
+    """Check if fallback/ directory exists with required files."""
+    fallback_path = os.path.join(skill_root, "..", "fallback")
+    if not os.path.isdir(fallback_path):
+        return {
+            "status": "warn",
+            "available": False,
+            "reason": "fallback/ directory not found. Level 2 offline install unavailable.",
+        }
+
+    evoclaw_status = "missing"
+    self_improving_status = "missing"
+
+    # Check evoclaw fallback
+    evoclaw_path = os.path.join(fallback_path, "evoclaw")
+    if os.path.isdir(evoclaw_path):
+        evoclaw_files_found = all(
+            os.path.isfile(os.path.join(evoclaw_path, f))
+            for f in FALLBACK_EVOCLAW_FILES
+        )
+        evoclaw_status = "ready" if evoclaw_files_found else "incomplete"
+
+    # Check self-improving fallback
+    self_improving_path = os.path.join(fallback_path, "self-improving")
+    if os.path.isdir(self_improving_path):
+        self_improving_files_found = all(
+            os.path.isfile(os.path.join(self_improving_path, f))
+            for f in FALLBACK_SELF_IMPROVING_FILES
+        )
+        self_improving_status = "ready" if self_improving_files_found else "incomplete"
+
+    return {
+        "status": "info",
+        "available": True,
+        "fallback_path": fallback_path,
+        "evoclaw": evoclaw_status,
+        "self-improving": self_improving_status,
+    }
+
+
 def main():
-    report = {"checks": {}, "blocking": False, "version": "1.1.0"}
+    report = {"checks": {}, "blocking": False, "version": "1.2.0"}
 
     workspace = get_workspace_path()
 
@@ -168,6 +226,10 @@ def main():
 
     # 6. Installed skills
     report["checks"]["installed_skills"] = check_installed_skills(workspace)
+
+    # 7. Fallback directory (v1.2.0)
+    skill_root = os.path.dirname(os.path.abspath(__file__))
+    report["checks"]["fallback"] = check_fallback_dir(skill_root)
 
     # Summary
     report["workspace_path"] = workspace
