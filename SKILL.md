@@ -1,6 +1,6 @@
 ---
 name: openclaw-soul
-description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、记忆架构，并通过场景化对话引导用户定义 Agent 性格。自动配置 EvoClaw（审批制进化）和 Self-Improving Agent（自主学习）。触发场景："setup openclaw-soul"、"安装进化框架"、"部署灵魂系统"、"openclaw-soul"。
+description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、PARA三层记忆架构、目标管理，并通过场景化对话引导用户定义 Agent 性格。自动配置 EvoClaw（审批制进化）和 Self-Improving Agent（自主学习）。触发场景："setup openclaw-soul"、"安装进化框架"、"部署灵魂系统"、"openclaw-soul"。
 metadata:
   clawdbot:
     emoji: "🧬"
@@ -11,13 +11,14 @@ metadata:
 
 # openclaw-soul — Self-Evolution Framework
 
-为 OpenClaw 安装完整的自我进化框架：宪法 + 可进化灵魂 + 心跳系统 + 记忆架构 + 治理配置。
+为 OpenClaw 安装完整的自我进化框架：宪法 + 可进化灵魂 + 结构化心跳协议 + PARA 三层记忆 + 目标管理 + 治理配置。
 
 **安装内容**：
-- 8 个工作区文件（AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, USER.md, IDENTITY.md, working-memory.md, long-term-memory.md）
+- 9 个工作区文件（AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, USER.md, IDENTITY.md, GOALS.md, working-memory.md, long-term-memory.md）
 - 2 个依赖 skill（evoclaw, self-improving）
 - Heartbeat 定时任务配置
-- EvoClaw 治理配置（advisory 模式）
+- EvoClaw 治理配置（advisory 模式 + soul-revisions 回滚）
+- PARA 三层记忆目录结构
 - 引导对话启动（BOOTSTRAP.md）
 
 ---
@@ -51,8 +52,8 @@ python3 "$(dirname "$0")/../scripts/preflight_check.py"
 1. **工作区目录存在**：`$WORKSPACE` 路径必须存在且可写
 2. **openclaw.json 可读**：检查 `$WORKSPACE/../openclaw.json` 是否存在且为有效 JSON
 3. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub`
-4. **列出已有文件**：检查以下 8 个文件是否已存在于 `$WORKSPACE`：
-   - AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md
+4. **列出已有文件**：检查以下 9 个文件是否已存在于 `$WORKSPACE`：
+   - AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, GOALS.md
    - USER.md, IDENTITY.md, working-memory.md, long-term-memory.md
 
 **输出格式**：逐项报告 pass/warn/fail，标记需要备份的文件。
@@ -90,15 +91,26 @@ cp "$WORKSPACE/{filename}" "$WORKSPACE/{filename}.backup.$(date +%Y%m%d-%H%M%S)"
 | `references/bootstrap-guide.md` | `$WORKSPACE/BOOTSTRAP.md` |
 | `references/user-template.md` | `$WORKSPACE/USER.md` |
 | `references/identity-template.md` | `$WORKSPACE/IDENTITY.md` |
+| `references/goals-template.md` | `$WORKSPACE/GOALS.md` |
 | `references/working-memory-template.md` | `$WORKSPACE/working-memory.md` |
 | `references/long-term-memory-template.md` | `$WORKSPACE/long-term-memory.md` |
 
 **部署步骤**：
 1. 读取 `references/` 中的模板文件内容
 2. 写入对应的 `$WORKSPACE` 目标路径
-3. 创建目录（如不存在）：
-   - `$WORKSPACE/memory/`
-   - `$WORKSPACE/daily-logs/`
+3. 创建目录结构（如不存在）：
+   ```
+   $WORKSPACE/
+   ├── memory/
+   │   ├── daily/              # Layer 2: daily notes
+   │   ├── entities/           # Layer 1: knowledge graph
+   │   ├── experiences/        # EvoClaw
+   │   ├── significant/        # EvoClaw
+   │   ├── reflections/        # EvoClaw
+   │   ├── proposals/          # EvoClaw
+   │   └── pipeline/           # EvoClaw
+   └── soul-revisions/         # SOUL.md version snapshots
+   ```
 4. 每个文件写入后读回验证——确认文件非空且内容完整
 
 如果任何文件写入失败，立即停止并报告错误。
@@ -145,21 +157,7 @@ cp "$WORKSPACE/{filename}" "$WORKSPACE/{filename}.backup.$(date +%Y%m%d-%H%M%S)"
 
 ## §6 [REQUIRED] EvoClaw 治理配置
 
-在 `$WORKSPACE/memory/` 下创建 EvoClaw 配置：
-
-### 6a. 目录结构
-
-确保以下目录存在：
-```
-$WORKSPACE/memory/
-├── experiences/
-├── significant/
-├── reflections/
-├── proposals/
-└── pipeline/
-```
-
-### 6b. 治理配置
+### 6a. 治理配置
 
 写入 `$WORKSPACE/memory/evoclaw-state.json`：
 
@@ -168,11 +166,12 @@ $WORKSPACE/memory/
   "mode": "advisory",
   "require_approval": ["Core Identity", "Capability Tree", "Value Function"],
   "auto_sections": ["Working Style", "User Understanding", "Evolution Log"],
+  "revision_dir": "soul-revisions",
   "initialized": true
 }
 ```
 
-### 6c. 验证
+### 6b. 验证
 
 确认 evoclaw-state.json 存在且可解析为有效 JSON。
 
@@ -264,21 +263,26 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 | 2 | SOUL.md 存在且非空 | `test -s $WORKSPACE/SOUL.md` |
 | 3 | HEARTBEAT.md 存在且非空 | `test -s $WORKSPACE/HEARTBEAT.md` |
 | 4 | BOOTSTRAP.md 存在且非空 | `test -s $WORKSPACE/BOOTSTRAP.md` |
-| 5 | USER.md 存在且非空 | `test -s $WORKSPACE/USER.md` |
-| 6 | IDENTITY.md 存在且非空 | `test -s $WORKSPACE/IDENTITY.md` |
-| 7 | working-memory.md 存在且非空 | `test -s $WORKSPACE/working-memory.md` |
-| 8 | long-term-memory.md 存在且非空 | `test -s $WORKSPACE/long-term-memory.md` |
-| 9 | EvoClaw skill 已安装 | `test -f $WORKSPACE/skills/evoclaw/SKILL.md` |
-| 10 | evoclaw-state.json 配置正确 | 读取并验证 mode=advisory |
-| 11 | Self-Improving skill 已安装 | `test -f $WORKSPACE/skills/self-improving/SKILL.md` |
-| 12 | ~/self-improving/ 目录就绪 | 检查 memory.md, corrections.md, index.md |
-| 13 | Heartbeat 配置已写入 | 读取 openclaw.json 确认 heartbeat 字段 |
+| 5 | GOALS.md 存在且非空 | `test -s $WORKSPACE/GOALS.md` |
+| 6 | USER.md 存在且非空 | `test -s $WORKSPACE/USER.md` |
+| 7 | IDENTITY.md 存在且非空 | `test -s $WORKSPACE/IDENTITY.md` |
+| 8 | working-memory.md 存在且非空 | `test -s $WORKSPACE/working-memory.md` |
+| 9 | long-term-memory.md 存在且非空 | `test -s $WORKSPACE/long-term-memory.md` |
+| 10 | EvoClaw skill 已安装 | `test -f $WORKSPACE/skills/evoclaw/SKILL.md` |
+| 11 | evoclaw-state.json 配置正确 | 读取并验证 mode=advisory |
+| 12 | Self-Improving skill 已安装 | `test -f $WORKSPACE/skills/self-improving/SKILL.md` |
+| 13 | ~/self-improving/ 目录就绪 | 检查 memory.md, corrections.md, index.md |
+| 14 | Heartbeat 配置已写入 | 读取 openclaw.json 确认 heartbeat 字段 |
+| 15 | memory/entities/ 目录存在 | `test -d $WORKSPACE/memory/entities` |
+| 16 | memory/daily/ 目录存在 | `test -d $WORKSPACE/memory/daily` |
+| 17 | soul-revisions/ 目录存在 | `test -d $WORKSPACE/soul-revisions` |
 
 **输出格式**：
 
 ```
 ✓ AGENTS.md — pass
 ✓ SOUL.md — pass
+✓ GOALS.md — pass
 ...
 ✗ EvoClaw — fail (SKILL.md not found)
 ```
@@ -299,10 +303,11 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 > "🧬 openclaw-soul 部署完成！
 >
 > 已安装：
-> - 宪法（AGENTS.md）
-> - 可进化灵魂（SOUL.md）
-> - 心跳系统（HEARTBEAT.md）
-> - 记忆架构（working-memory + long-term-memory）
+> - 宪法（AGENTS.md）— 含 Conductor 协议和委派规范
+> - 可进化灵魂（SOUL.md）— 带版本快照回滚
+> - 结构化心跳协议（HEARTBEAT.md）— 唤醒上下文 + 阻塞去重 + 预算感知
+> - PARA 三层记忆（entities 知识图谱 + daily 日记 + 隐性知识）
+> - 目标管理（GOALS.md）— 任务追溯到目标
 > - EvoClaw 治理（advisory 模式）
 > - Self-Improving Agent
 >
@@ -313,4 +318,4 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 
 ---
 
-_openclaw-soul v1.0.0 — Give your AI a soul that grows._
+_openclaw-soul v1.1.0 — Give your AI a soul that grows._

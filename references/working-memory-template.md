@@ -1,6 +1,7 @@
 # Working Memory
 
-> Active context and in-progress tasks. Updated in real-time.
+> Active context, in-progress tasks, and delegation state. Updated in real-time.
+> This is the "hot" layer — what you need to know RIGHT NOW.
 
 ## Current State
 - Fresh deployment — calibration phase
@@ -8,7 +9,24 @@
 - Awaiting BOOTSTRAP conversation to define identity
 
 ## Active Tasks
-(none)
+
+| Task | Goal | Agent | Status | Updated |
+|------|------|-------|--------|---------|
+| (none) | | | | |
+
+Status values: `pending` / `in_progress` / `blocked` / `done`
+
+## Blocked Tasks
+
+| Task | Blocker | Since | Last Reported | New Context? |
+|------|---------|-------|---------------|--------------|
+| (none) | | | | |
+
+## Delegation Log
+
+| Task | Delegated To | Context Given | Expected Output | Result |
+|------|-------------|---------------|-----------------|--------|
+| (none) | | | | |
 
 ## Recent Context
 - System initialized with AGENTS.md constitution and SOUL.md personality framework

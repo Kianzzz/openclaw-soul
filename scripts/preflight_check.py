@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-openclaw-soul preflight check
+openclaw-soul preflight check v1.1
 Validates environment before deploying the self-evolution framework.
 Exit 0 = all clear, Exit 1 = blocking issues found.
 Output: JSON report.
@@ -16,6 +16,7 @@ WORKSPACE_FILES = [
     "SOUL.md",
     "HEARTBEAT.md",
     "BOOTSTRAP.md",
+    "GOALS.md",
     "USER.md",
     "IDENTITY.md",
     "working-memory.md",
@@ -24,12 +25,14 @@ WORKSPACE_FILES = [
 
 REQUIRED_DIRS = [
     "memory",
+    "memory/daily",
+    "memory/entities",
     "memory/experiences",
     "memory/significant",
     "memory/reflections",
     "memory/proposals",
     "memory/pipeline",
-    "daily-logs",
+    "soul-revisions",
 ]
 
 DEPENDENCY_SKILLS = ["evoclaw", "self-improving"]
@@ -61,7 +64,6 @@ def check_config(workspace):
     if not workspace:
         return {"status": "skip", "reason": "no workspace"}
     config_path = os.path.join(os.path.dirname(workspace.rstrip("/")), "openclaw.json")
-    # Also check in workspace parent
     alt_path = os.path.join(workspace, "..", "openclaw.json")
     for p in [config_path, os.path.normpath(alt_path)]:
         if os.path.isfile(p):
@@ -82,7 +84,6 @@ def check_clawhub():
     path = shutil.which("clawhub")
     if path:
         return {"status": "pass", "path": path}
-    # Check common locations
     for loc in ["~/.openclaw/bin/clawhub", "/usr/local/bin/clawhub"]:
         expanded = os.path.expanduser(loc)
         if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
@@ -111,6 +112,25 @@ def check_existing_files(workspace):
     }
 
 
+def check_existing_dirs(workspace):
+    """Check which required directories already exist."""
+    if not workspace:
+        return {"status": "skip", "reason": "no workspace"}
+    existing = []
+    missing = []
+    for d in REQUIRED_DIRS:
+        path = os.path.join(workspace, d)
+        if os.path.isdir(path):
+            existing.append(d)
+        else:
+            missing.append(d)
+    return {
+        "status": "info",
+        "existing": existing,
+        "missing": missing,
+    }
+
+
 def check_installed_skills(workspace):
     """Check if dependency skills are already installed."""
     if not workspace:
@@ -124,7 +144,7 @@ def check_installed_skills(workspace):
 
 
 def main():
-    report = {"checks": {}, "blocking": False}
+    report = {"checks": {}, "blocking": False, "version": "1.1.0"}
 
     workspace = get_workspace_path()
 
@@ -143,7 +163,10 @@ def main():
     # 4. Existing files
     report["checks"]["existing_files"] = check_existing_files(workspace)
 
-    # 5. Installed skills
+    # 5. Existing directories
+    report["checks"]["existing_dirs"] = check_existing_dirs(workspace)
+
+    # 6. Installed skills
     report["checks"]["installed_skills"] = check_installed_skills(workspace)
 
     # Summary
