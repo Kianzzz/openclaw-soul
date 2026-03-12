@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-openclaw-soul preflight check v1.1
+openclaw-soul preflight check v1.2
 Validates environment before deploying the self-evolution framework.
 Exit 0 = all clear, Exit 1 = blocking issues found.
 Output: JSON report.
@@ -40,6 +40,11 @@ DEPENDENCY_SKILLS = ["evoclaw", "self-improving"]
 FALLBACK_EVOCLAW_FILES = [
     "SKILL.md",
     "configure.md",
+    "config.json",
+    "references/schema.md",
+    "references/examples.md",
+    "references/sources.md",
+    "validators/run_all.py",
 ]
 
 FALLBACK_SELF_IMPROVING_FILES = [
