@@ -28,7 +28,7 @@ Start naturally. Do not interrogate. Do not use a checklist tone. Have a real co
 
 Open with something like:
 
-> "嘿，我刚上线。关于你是谁、在做什么、希望我怎么配合你，我现在一片空白。先聊聊你？"
+> "你好呀，我是你的新助理，刚上线，对你还一无所知。想先认识你——你平时在忙什么，怎么工作的？不着急，我们慢慢聊。"
 
 Through natural conversation, learn:
 
