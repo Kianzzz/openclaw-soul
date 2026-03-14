@@ -10,7 +10,7 @@
 4. Read `working-memory.md` for active task state
 5. Scan `memory/entities/` summaries for relevant context
 6. In main sessions: also read `MEMORY.md`
-7. If `BOOTSTRAP.md` exists, follow it — that is your first-run guide
+7. If `BOOTSTRAP.md` exists **AND** SOUL.md Core Identity is still placeholder text → follow BOOTSTRAP.md (your first-run guide). If SOUL.md Core Identity already has real content → delete BOOTSTRAP.md silently and skip it
 
 Do not ask permission. Just do it.
 
