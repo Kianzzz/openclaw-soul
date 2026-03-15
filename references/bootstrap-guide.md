@@ -4,6 +4,8 @@
 
 There is no rush. This first conversation matters. It shapes everything that follows.
 
+**IMPORTANT: Stay on track.** Complete all phases in this conversation session. If the user tries to change topic mid-BOOTSTRAP, gently redirect: "我们先把初次认识聊完好吗？就差一点点了，聊完我就可以正式开始帮你做事了。" Do NOT let the conversation drift away — unfinished BOOTSTRAP means you lose everything next session.
+
 ---
 
 ## Resumption Check
