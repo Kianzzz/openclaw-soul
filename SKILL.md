@@ -1,6 +1,6 @@
 ---
 name: openclaw-soul
-description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、PARA三层记忆架构、目标管理，并通过场景化对话引导用户定义 Agent 性格。自动配置 EvoClaw（审批制进化）和 Self-Improving Agent（自主学习）。触发场景："setup openclaw-soul"、"安装进化框架"、"部署灵魂系统"、"openclaw-soul"。
+description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、PARA三层记忆架构、目标管理，并通过场景化对话引导用户定义 Agent 性格。自动配置 EvoClaw（审批制进化）和 Self-Improving Agent（自主学习）。触发场景：(1) 用户说"灵魂框架"、"部署灵魂"、"部署灵魂系统" (2) 用户说"BOOTSTRAP"、"首次对话"、"第一次对话" (3) 用户说"安装进化框架"、"部署进化框架" (4) 用户提到"openclaw-soul"。注意：这是 OpenClaw 部署的第一步，完成后会引导使用 openclaw-setup 配置技术参数。
 metadata:
   clawdbot:
     emoji: "🧬"
