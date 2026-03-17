@@ -51,7 +51,7 @@ python3 "$(dirname "$0")/../scripts/preflight_check.py"
 
 1. **工作区目录存在**：`$WORKSPACE` 路径必须存在且可写
 2. **openclaw.json 可读**：检查 `$WORKSPACE/../openclaw.json` 是否存在且为有效 JSON
-3. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub`
+3. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub` 或 `/usr/bin/clawhub`
 4. **列出已有文件**：检查以下 9 个文件是否已存在于 `$WORKSPACE`：
    - AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, GOALS.md
    - USER.md, IDENTITY.md, working-memory.md, long-term-memory.md
@@ -62,6 +62,30 @@ python3 "$(dirname "$0")/../scripts/preflight_check.py"
 - 任何 `fail` → 报告问题并**停止**，告知用户如何修复
 - 只有 `warn` → 告知用户限制，确认是否继续
 - 全部 `pass` → 继续下一步
+
+### 2a. clawhub 引导（如果检测为 warn）
+
+**如果 clawhub 不可用**，在继续前告知用户：
+
+> "⚠️ 未检测到 clawhub（OpenClaw 技能包管理器）。
+>
+> clawhub 可以让你安装完整版的 EvoClaw 和 Self-Improving Agent，支持独立管理和更新。
+>
+> **安装方法**：
+> ```bash
+> npm install -g @openclaw/clawhub
+> # 或者
+> pnpm add -g @openclaw/clawhub
+> ```
+>
+> **你可以选择**：
+> 1. 现在安装 clawhub（推荐）→ 安装后重新触发 openclaw-soul
+> 2. 继续部署 → 使用内联版本（功能完整，只是管理方式不同）
+>
+> 选择 2 不影响使用，核心的自我进化机制已经内置在 AGENTS.md 中。"
+
+如果用户选择 1，暂停部署并告知重新触发方式。
+如果用户选择 2，继续 §3。
 
 ---
 
@@ -151,14 +175,22 @@ CLAWHUB_AVAILABLE=$?
    - 如果 fallback 文件也不存在，记录警告继续下一步
 
 3. **Level 3 - AGENTS.md 内联版本**
-   > "⚠️ EvoClaw 离线安装不可用。openclaw-soul 将使用 AGENTS.md 中的内联 Identity Evolution 机制。
+   > "ℹ️ 使用 AGENTS.md 内联版本。
    >
-   > 功能对标：
-   > - 核心 Identity 变更需要用户批准
-   > - Working Style 和 User Understanding 可自主更新
-   > - SOUL.md 变更前自动创建快照
+   > **功能对标**：
+   > - EvoClaw: 核心 Identity 变更需要用户批准 ✓
+   > - Self-Improving: 用户纠正自动学习 ✓
+   > - SOUL.md 变更前自动创建快照 ✓
    >
-   > 如需完整 EvoClaw：稍后执行 `clawhub install evoclaw` 或从服务器复制 fallback 文件。"
+   > **与完整版的区别**：
+   > - 内联版：规则写在 AGENTS.md，随 workspace 同步
+   > - 完整版：独立 skill，可通过 clawhub 更新和管理
+   >
+   > 💡 **想升级到完整版？** 安装 clawhub 后执行：
+   > ```bash
+   > clawhub install evoclaw
+   > clawhub install self-improving
+   > ```"
 
 ### 5c. 安装 Self-Improving Agent
 
@@ -183,15 +215,21 @@ CLAWHUB_AVAILABLE=$?
    - 如果 fallback 文件也不存在，记录警告继续下一步
 
 3. **Level 3 - AGENTS.md 内联版本**
-   > "⚠️ Self-Improving 离线安装不可用。openclaw-soul 将使用 AGENTS.md 中的内联 Self-Improving Protocol。
+   > "ℹ️ 使用 AGENTS.md 内联版本。
    >
-   > 功能对标：
-   > - 加载已学规则：从 ~/self-improving/memory.md 读取
-   > - 用户纠正 → ~/self-improving/corrections.md
-   > - 同一模式重复 3 次 → 升级为永久规则
-   > - 30 天未使用 → 降级到 archive/
+   > **功能对标**：
+   > - Self-Improving: 用户纠正自动学习 ✓
+   > - 规则持久化和优先级管理 ✓
+   > - 30天未使用自动归档 ✓
    >
-   > 如需完整 Self-Improving Agent：稍后执行 `clawhub install self-improving` 或从服务器复制 fallback 文件。"
+   > **与完整版的区别**：
+   > - 内联版：规则写在 AGENTS.md，随 workspace 同步
+   > - 完整版：独立 skill，可通过 clawhub 更新和管理
+   >
+   > 💡 **想升级到完整版？** 安装 clawhub 后执行：
+   > ```bash
+   > clawhub install self-improving
+   > ```"
 
 ### 5d. 验证结果
 
