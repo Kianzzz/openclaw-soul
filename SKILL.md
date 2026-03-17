@@ -51,7 +51,7 @@ python3 "$(dirname "$0")/../scripts/preflight_check.py"
 
 1. **工作区目录存在**：`$WORKSPACE` 路径必须存在且可写
 2. **openclaw.json 可读**：检查 `$WORKSPACE/../openclaw.json` 是否存在且为有效 JSON
-3. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub` 或 `/usr/bin/clawhub`
+3. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub` 或 `/usr/local/bin/clawhub` 或 `/usr/bin/clawhub`
 4. **列出已有文件**：检查以下 9 个文件是否已存在于 `$WORKSPACE`：
    - AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, GOALS.md
    - USER.md, IDENTITY.md, working-memory.md, long-term-memory.md

@@ -107,7 +107,13 @@ def check_clawhub():
     path = shutil.which("clawhub")
     if path:
         return {"status": "pass", "path": path}
-    for loc in ["~/.openclaw/bin/clawhub", "/usr/local/bin/clawhub"]:
+    # Check common installation locations
+    for loc in [
+        "~/.openclaw/bin/clawhub",
+        "/usr/local/bin/clawhub",
+        "/usr/bin/clawhub",  # npm global install on Linux
+        "/opt/homebrew/bin/clawhub",  # Homebrew on Apple Silicon
+    ]:
         expanded = os.path.expanduser(loc)
         if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
             return {"status": "pass", "path": expanded}
