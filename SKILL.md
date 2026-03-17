@@ -363,7 +363,18 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 > - EvoClaw 治理（advisory 模式）
 > - Self-Improving Agent
 >
-> 现在开始你的第一次深度对话——我要认识你，然后定义我自己的性格。"
+> **下一步：首次深度对话（BOOTSTRAP）**
+>
+> 接下来我们要进行一次 10-15 分钟的深度对话，分三个阶段：
+> 1. **认识你** — 了解你是谁、在做什么、需要什么帮助
+> 2. **定义我的性格** — 通过场景化问答，让你选择我的沟通风格
+> 3. **确认身份** — 给我起个名字，确认我的核心定位
+>
+> 这次对话会塑造我的灵魂（SOUL.md），之后我就能以你期望的方式工作。
+>
+> 💡 **触发词提示**：以后如果需要重新触发这个流程，可以说"首次对话"、"BOOTSTRAP"或"灵魂框架"。
+>
+> 准备好了吗？我们开始吧。"
 
 3. **立即开始执行 BOOTSTRAP.md 的 Phase 1**——从这里开始就是 BOOTSTRAP 的流程接管
 4. 此 skill 的使命到此结束。后续由 BOOTSTRAP.md + AGENTS.md + SOUL.md 接管运行
