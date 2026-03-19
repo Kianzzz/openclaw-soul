@@ -1,6 +1,6 @@
 ---
 name: openclaw-soul
-description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、PARA三层记忆架构、目标管理，并通过场景化对话引导用户定义 Agent 性格。自动配置 EvoClaw（审批制进化）和 Self-Improving Agent（自主学习）。触发场景：(1) 用户说"灵魂框架"、"部署灵魂"、"部署灵魂系统" (2) 用户说"BOOTSTRAP"、"首次对话"、"第一次对话" (3) 用户说"安装进化框架"、"部署进化框架" (4) 用户提到"openclaw-soul"。注意：这是 OpenClaw 部署的第一步，完成后会引导使用 openclaw-setup 配置技术参数。
+description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、六层记忆架构、目标管理、思维方法论（HDD/SDD）、跨会话存档（save-game/load-game），并通过场景化对话引导用户定义 Agent 性格。自动配置 EvoClaw（审批制进化）和 Self-Improving Agent（自主学习）。触发场景：(1) 用户说"灵魂框架"、"部署灵魂"、"部署灵魂系统" (2) 用户说"BOOTSTRAP"、"首次对话"、"第一次对话" (3) 用户说"安装进化框架"、"部署进化框架" (4) 用户提到"openclaw-soul"。注意：这是 OpenClaw 部署的第一步，完成后会引导使用 openclaw-setup 配置技术参数。
 metadata:
   clawdbot:
     emoji: "🧬"
@@ -11,14 +11,16 @@ metadata:
 
 # openclaw-soul — Self-Evolution Framework
 
-为 OpenClaw 安装完整的自我进化框架：宪法 + 可进化灵魂 + 结构化心跳协议 + PARA 三层记忆 + 目标管理 + 治理配置。
+为 OpenClaw 安装完整的自我进化框架：宪法 + 可进化灵魂 + 结构化心跳协议 + 六层记忆 + 思维方法论 + 跨会话存档 + 目标管理 + 治理配置。
 
 **安装内容**：
 - 9 个工作区文件（AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, USER.md, IDENTITY.md, GOALS.md, working-memory.md, long-term-memory.md）
-- 2 个依赖 skill（evoclaw, self-improving）
+- 7 个依赖 skill（evoclaw, self-improving, hdd, sdd, save-game, load-game, project-skill-pairing）
+- 2 个记忆基础设施脚本（merge-daily-transcript.js, auto-commit.sh）
 - Heartbeat 定时任务配置
 - EvoClaw 治理配置（advisory 模式 + soul-revisions 回滚）
-- PARA 三层记忆目录结构
+- 六层记忆目录结构 + Git 版本管理
+- 向量搜索配置引导
 - 引导对话启动（BOOTSTRAP.md）
 
 ---
@@ -127,15 +129,23 @@ cp "$WORKSPACE/{filename}" "$WORKSPACE/{filename}.backup.$(date +%Y%m%d-%H%M%S)"
    $WORKSPACE/
    ├── memory/
    │   ├── daily/              # Layer 2: daily notes
-   │   ├── entities/           # Layer 1: knowledge graph
+   │   ├── entities/           # Layer 3: knowledge graph
+   │   ├── transcripts/        # Layer 5: full dialogue archive
+   │   ├── projects/           # Layer 6: project-scoped memory
+   │   ├── voice/              # Voice JSONL (optional)
    │   ├── experiences/        # EvoClaw
    │   ├── significant/        # EvoClaw
    │   ├── reflections/        # EvoClaw
    │   ├── proposals/          # EvoClaw
    │   └── pipeline/           # EvoClaw
+   ├── scripts/                # Memory infrastructure scripts
    └── soul-revisions/         # SOUL.md version snapshots
    ```
-4. 每个文件写入后读回验证——确认文件非空且内容完整
+4. 部署记忆基础设施脚本：
+   - 从 `fallback/memory-deposit/scripts/merge-daily-transcript.js` 复制到 `$WORKSPACE/scripts/`
+   - 从 `fallback/memory-deposit/scripts/auto-commit.sh` 复制到 `$WORKSPACE/scripts/`
+   - 验证两个脚本文件存在且非空
+5. 每个文件写入后读回验证——确认文件非空且内容完整
 
 如果任何文件写入失败，立即停止并报告错误。
 
@@ -231,16 +241,39 @@ CLAWHUB_AVAILABLE=$?
    > clawhub install self-improving
    > ```"
 
-### 5d. 验证结果
+### 5d. 安装思维方法论与项目管理 Skills
+
+以下 5 个 skill 使用同样的三级 Fallback 机制安装：
+
+| Skill | clawhub 名称 | Fallback 路径 | 功能 |
+|-------|-------------|-------------|------|
+| HDD | `hdd` | `fallback/hdd/` | 假设驱动开发 |
+| SDD | `sdd` | `fallback/sdd/` | 场景驱动开发 |
+| save-game | `save-game` | `fallback/save-game/` | 项目存档 |
+| load-game | `load-game` | `fallback/load-game/` | 项目恢复 |
+| project-skill-pairing | `project-skill-pairing` | `fallback/project-skill-pairing/` | 项目与 Skill 结对 |
+
+对每个 skill，按顺序尝试：
+1. **Level 1**: `clawhub install <name> --force`（如果可用）
+2. **Level 2**: `cp -r "$(dirname "$0")/../fallback/<name>" "$WORKSPACE/skills/"`
+3. **Level 3**: 记录警告，继续下一个（这些 skill 没有 AGENTS.md 内联版本——它们是独立方法论，必须以 skill 形式存在）
+
+### 5e. 验证结果
 
 安装完成后，逐项报告：
 
 ```
 ✓ EvoClaw: [installed from clawhub | installed from fallback | using inline version]
 ✓ Self-Improving: [installed from clawhub | installed from fallback | using inline version]
+✓ HDD: [installed from clawhub | installed from fallback | ⚠️ not installed]
+✓ SDD: [installed from clawhub | installed from fallback | ⚠️ not installed]
+✓ save-game: [installed from clawhub | installed from fallback | ⚠️ not installed]
+✓ load-game: [installed from clawhub | installed from fallback | ⚠️ not installed]
+✓ project-skill-pairing: [installed from clawhub | installed from fallback | ⚠️ not installed]
 ```
 
-- 如果两个都"using inline version"，提示用户可随时升级到完整版本
+- EvoClaw 和 Self-Improving "using inline version" 是正常的
+- HDD/SDD/save-game/load-game/project-skill-pairing 如果未安装，提示用户手动从 fallback 复制
 - 如果有 fallback 或 Level 1 安装，验证对应的 SKILL.md 文件存在且非空
 
 ---
@@ -343,6 +376,113 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 
 ---
 
+## §8.5 [REQUIRED] 向量搜索配置
+
+**没有向量搜索的记忆系统是摆设——写了等于白写。此步骤不可跳过。**
+
+### 8.5a. 检测当前状态
+
+执行 `memory_search(query="test memory recall")`：
+
+- **有结果** → embedding 已就绪，跳到 8.5b
+- **报错或无结果** → 需要配置 embedding provider
+
+### 8.5b. 配置 embedding provider（如果未就绪）
+
+向用户说明并推荐方案：
+
+> "向量搜索需要一个 embedding API key，这是记忆系统的核心能力——没有它，我就无法从历史记忆中检索信息。"
+
+| 方案 | 模型 | 价格 | 说明 |
+|------|------|------|------|
+| **Gemini** | `gemini-embedding-001` | 免费额度大 | 配置最简单 |
+| **硅基流动 SiliconFlow** | `BAAI/bge-large-zh-v1.5` 或 `BAAI/bge-m3` | 免费（注册送额度） | 中文效果好，OpenAI 兼容接口 |
+| **OpenAI** | `text-embedding-3-small` | 付费 | 效果稳定 |
+
+硅基流动配置示例（provider 设为 openai，用自定义 baseUrl）：
+```json5
+memorySearch: {
+  provider: "openai",
+  model: "BAAI/bge-large-zh-v1.5",
+  remote: {
+    baseUrl: "https://api.siliconflow.cn/v1",
+    apiKey: "<用户的 SiliconFlow API Key>"
+  }
+}
+```
+
+确认用户选定方案后，用 `gateway(action=config.patch)` 或直接编辑 `openclaw.json` 配好。
+
+### 8.5c. 配置 extraPaths
+
+确保所有重要目录纳入索引：
+
+```json5
+memorySearch: {
+  extraPaths: ["memory/transcripts", "memory/projects", "AGENTS.md"]
+}
+```
+
+### 8.5d. 开启高级搜索功能
+
+```json5
+{
+  "agents": {
+    "defaults": {
+      "memorySearch": {
+        "query": {
+          "hybrid": {
+            "mmr": { "enabled": true, "lambda": 0.7 },
+            "temporalDecay": { "enabled": true, "halfLifeDays": 30 }
+          }
+        },
+        "cache": { "enabled": true, "maxEntries": 50000 }
+      }
+    }
+  }
+}
+```
+
+### 8.5e. 验证
+
+再次执行 `memory_search(query="test")` 确认可用。如果 memory/ 下还没有文件，告知用户："向量搜索已就绪，等积累了笔记后就能搜到了。"
+
+---
+
+## §8.6 [REQUIRED] Git 版本管理初始化
+
+### 8.6a. 初始化 Git
+
+检查 `$WORKSPACE/.git/` 是否存在：
+
+**不存在** →
+```bash
+cd $WORKSPACE && git init
+```
+
+写入 `.gitignore`（排除敏感文件和临时文件）：
+```
+.env*
+*.secrets
+credentials.json
+tmp/
+node_modules/
+.DS_Store
+```
+
+执行首次提交：
+```bash
+git add -A && git commit -m "init: openclaw-soul workspace"
+```
+
+**已存在** → 检查 `.gitignore` 包含上述排除项，缺的补上。
+
+### 8.6b. 验证
+
+确认 `git status` 可正常执行。
+
+---
+
 ## §9 [REQUIRED] 验证清单
 
 逐项检查并报告 pass/fail：
@@ -366,6 +506,17 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 | 15 | memory/entities/ 目录存在 | `test -d $WORKSPACE/memory/entities` |
 | 16 | memory/daily/ 目录存在 | `test -d $WORKSPACE/memory/daily` |
 | 17 | soul-revisions/ 目录存在 | `test -d $WORKSPACE/soul-revisions` |
+| 18 | memory/transcripts/ 目录存在 | `test -d $WORKSPACE/memory/transcripts` |
+| 19 | memory/projects/ 目录存在 | `test -d $WORKSPACE/memory/projects` |
+| 20 | scripts/merge-daily-transcript.js 存在 | `test -f $WORKSPACE/scripts/merge-daily-transcript.js` |
+| 21 | scripts/auto-commit.sh 存在 | `test -f $WORKSPACE/scripts/auto-commit.sh` |
+| 22 | HDD skill 已安装 | `test -f $WORKSPACE/skills/hdd/SKILL.md` |
+| 23 | SDD skill 已安装 | `test -f $WORKSPACE/skills/sdd/SKILL.md` |
+| 24 | save-game skill 已安装 | `test -f $WORKSPACE/skills/save-game/SKILL.md` |
+| 25 | load-game skill 已安装 | `test -f $WORKSPACE/skills/load-game/SKILL.md` |
+| 26 | project-skill-pairing skill 已安装 | `test -f $WORKSPACE/skills/project-skill-pairing/SKILL.md` |
+| 27 | 向量搜索可用 | `memory_search(query="test")` 不报错 |
+| 28 | Git 已初始化 | `test -d $WORKSPACE/.git` |
 
 **输出格式**：
 
@@ -393,10 +544,14 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 > "🧬 openclaw-soul 部署完成！
 >
 > 已安装：
-> - 宪法（AGENTS.md）— 含 Conductor 协议和委派规范
-> - 可进化灵魂（SOUL.md）— 带版本快照回滚
-> - 结构化心跳协议（HEARTBEAT.md）— 唤醒上下文 + 阻塞去重 + 预算感知
-> - PARA 三层记忆（entities 知识图谱 + daily 日记 + 隐性知识）
+> - 宪法（AGENTS.md）— 含 Conductor 协议、委派规范、搜索协议、Skill 路由
+> - 可进化灵魂（SOUL.md）— 带版本快照回滚 + 思维方法论自我认知
+> - 结构化心跳协议（HEARTBEAT.md）— 唤醒上下文 + 阻塞去重 + 预算感知 + 对话合并 + Git 自动提交
+> - 六层记忆系统（working-memory → daily → entities → tacit → transcripts → projects）
+> - 记忆基础设施（向量搜索 + Git 版本管理 + 对话合并脚本）
+> - 思维方法论（HDD 假设驱动 + SDD 场景驱动）
+> - 跨会话连续性（save-game 存档 + load-game 恢复 + HANDOFF.md 交接）
+> - 项目管理（project-skill-pairing 三层分级）
 > - 目标管理（GOALS.md）— 任务追溯到目标
 > - EvoClaw 治理（advisory 模式）
 > - Self-Improving Agent
@@ -419,4 +574,4 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 
 ---
 
-_openclaw-soul v1.2.0 — Zero-dependency deployment with three-level fallback. Give your AI a soul that grows._
+_openclaw-soul v2.0.0 — Six-layer memory, thinking methodology, cross-session continuity. Give your AI a soul that grows._
