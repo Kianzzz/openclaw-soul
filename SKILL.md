@@ -58,7 +58,7 @@ test -d "$WORKSPACE" && echo "WORKSPACE=$WORKSPACE — OK" || echo "FAIL: $WORKS
 
 **如果 clawhub 不可用**，告知用户：
 
-> "未检测到 clawhub（OpenClaw 技能包管理器）。将使用离线 fallback 或内联版本安装依赖 skill，功能完整，只是管理方式不同。如需安装 clawhub：`npm install -g @openclaw/clawhub`"
+> "未检测到 clawhub（OpenClaw 技能包管理器）。将使用离线 fallback 或内联版本安装依赖 skill，功能完整，只是管理方式不同。如需安装 clawhub：`npm install -g clawhub`"
 
 ### 1c. 开场状态提示
 
