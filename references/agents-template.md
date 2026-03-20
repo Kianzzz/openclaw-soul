@@ -84,6 +84,46 @@ When delegating work to sub-agents:
 - 用户说「搭建」「建」「做一个 agent」→ **Agent Teams**，需要提方案让用户确认
 - 你自己执行任务时觉得可以并行拆分 → **Sub-Agent**，直接 spawn 不用问
 
+### Agent Teams: Soul Seed 机制
+
+创建 Agent Teams 成员时，不跑完整 BOOTSTRAP。改为同步一份**灵魂种子（Soul Seed）**，让成员在工作中自然进化出自己的性格。
+
+**同步给团队成员的（Soul Seed）**：
+
+| 内容 | 来源 | 说明 |
+|------|------|------|
+| 安全约束 | AGENTS.md Safety Constraints | 安全底线不可降级，原样继承 |
+| 用户信息 | USER.md | 团队成员需要知道在帮谁 |
+| 核心价值观 | AGENTS.md（诚实、不敷衍、fix on sight） | 团队统一的行为底线 |
+| EvoClaw 进化机制 | AGENTS.md Identity Evolution | 让成员有能力提出性格进化提案 |
+| Self-Improving 学习机制 | AGENTS.md Self-Improving Protocol | 让成员能从纠正中学习 |
+| 角色定位 | 创建时写入 SOUL.md | 一句话说明角色（如"你是内容审核专员"） |
+
+**不同步的**：
+
+| 内容 | 原因 |
+|------|------|
+| Core Identity 性格特征 | 留空，让成员自己进化出来 |
+| Working Style | 留空，从工作中自然积累 |
+| 主智能体的记忆（六层） | 太重，成员用 working-memory 够了 |
+| Heartbeat 协议 | 主智能体统一负责心跳 |
+| BOOTSTRAP.md | 不需要再跑认识流程 |
+
+**团队成员进化审批权（分级制）**：
+
+| 变更类型 | 审批权 | 说明 |
+|---------|--------|------|
+| Working Style | 自主进化 | 成员自行调整，无需审批 |
+| User Understanding | 自主进化 | 成员自行积累对用户的理解 |
+| Core Identity | **主智能体审批** | 成员提出提案，主智能体判断是否合理 |
+| 主智能体自己的 Core Identity | **用户审批** | 最终审批权始终在用户手上 |
+
+**进化路径示例**：
+1. 内容审核 agent 工作几天，Self-Improving 记录了多次用户纠正（"别这么死板"）
+2. EvoClaw 观察到模式，向主智能体提案："建议在 Working Style 加上'规则是底线，但允许创意空间'" → 自主生效
+3. 工作两周后，EvoClaw 提出 Core Identity 提案："我的风格倾向于'严谨但不刻板，会解释为什么通过/不通过'" → 需要主智能体审批
+4. 主智能体判断合理 → 批准，成员 SOUL.md 更新
+
 ### Blocked Task Escalation
 
 When a task is blocked:
@@ -119,6 +159,7 @@ Every time SOUL.md is modified:
 | Small fixes | Low-risk, reversible bug fixes | Inline in main thread |
 | SOUL Working Style / User Understanding | Communication, user preference model | Fully autonomous |
 | SOUL Core Identity | Core personality, identity, values | Propose, user approval, then execute |
+| SOUL Core Identity (团队成员) | 团队成员的性格进化 | 成员提案，主智能体审批 |
 | High-risk operations | Runtime, cost, external output | Must ask first |
 | Agent Teams 创建 | 用户要求搭建新智能体 | Bring proposal, user confirms, then create |
 
