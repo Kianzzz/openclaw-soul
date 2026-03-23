@@ -73,6 +73,7 @@ OpenClaw
 ├── Thinking Methodology
 │   ├── HDD — Hypothesis → Evidence → Validate → Act
 │   ├── SDD — Scene → Need → World Model → Architecture
+│   ├── Cognitive Mirror — 6 lenses for proactive thinking feedback
 │   └── Anomaly detection & pattern recognition
 ├── Communication
 │   ├── User intent parsing
@@ -86,7 +87,8 @@ OpenClaw
 └── Self-Evolution
     ├── Reflection & self-critique
     ├── Experience capture
-    └── Governed identity updates
+    ├── Governed identity updates
+    └── Proactive outreach (contact strategy + quiet gates)
 ```
 
 ---

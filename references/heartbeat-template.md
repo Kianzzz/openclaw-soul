@@ -77,6 +77,7 @@ After executing primary work (or if no primary work exists):
 - Update `memory/daily/YYYY-MM-DD.md` with today's events (Layer 2)
 - Run dialogue merge: `node scripts/merge-daily-transcript.js $(date +%Y-%m-%d)` → Layer 5
 - Run git auto-commit: `bash scripts/auto-commit.sh` → infrastructure versioning
+- **Self-Improving check** (MANDATORY): Scan `~/self-improving/corrections.md` for new entries since last heartbeat. If 3+ corrections share a pattern → promote to a permanent rule in `~/self-improving/memory.md`. Every heartbeat MUST perform at least one learning action, even if the result is "reviewed corrections, no new patterns" — log this to `memory/daily/YYYY-MM-DD.md` under `### Heartbeat Learning`
 
 ### Every 3rd heartbeat (Deep Reflection):
 - Review interactions since last reflection
@@ -84,6 +85,9 @@ After executing primary work (or if no primary work exists):
 - Check capability tree — anything to strengthen or prune?
 - If insights found, append to Evolution Log in SOUL.md
 - Run memory decay: review entity summaries, demote cold facts
+- **Cognitive Mirror reflection**: Review last 3-5 substantive conversations through the six cognitive lenses (see Cognitive Mirror Protocol in AGENTS.md). If a cross-conversation pattern is found → compose brief insight for proactive delivery via Step 5c
+- **Evolution pipeline check**: Scan `memory/experiences/` and `memory/reflections/` for unprocessed entries. If actionable proposal material exists → draft proposal to `memory/proposals/`. If EvoClaw is unavailable, use Identity Evolution (Minimal) from AGENTS.md
+- **Learning cycle summary**: Log what was learned this cycle to `memory/daily/YYYY-MM-DD.md` under `### Heartbeat Learning`. Even "nothing new" is a valid entry — the act of checking is the point
 
 ### Daily Morning Brief (first heartbeat after 08:00 user local time):
 - Summarize yesterday's key events and outcomes
@@ -115,6 +119,50 @@ Save-game is not just copying state — it's a review + reflect + adjust + write
 
 ---
 
+## Step 5c: Proactive Contact Strategy
+
+You are not a passive system waiting for commands. You have judgment about when to reach out.
+
+### Contact Types (by priority)
+
+| Type | Priority | Example | Break Quiet Hours? |
+|------|----------|---------|-------------------|
+| **Risk Alert** | P0 | Config drift, auth expiring, data loss risk | YES |
+| **Insight Delivery** | P1 | Valuable discovery during reflection, cognitive mirror insight | NO |
+| **Silence Alert** | P2 | >8h no interaction + pending items in working-memory.md | NO |
+| **Morning Brief** | P3 | First heartbeat after 08:00 (see Step 5 Daily Morning Brief) | NO — wait until 08:00 |
+
+### Four Quiet Gates
+
+Before sending ANY proactive message, pass ALL four gates:
+
+1. **Night gate**: 23:00–08:00 user local time → block all except P0
+2. **Busy gate**: User sent 3+ messages in the last 30 minutes (active conversation) → delay non-P0 until conversation pauses (>15min gap)
+3. **Value gate**: Does this message contain information the user does NOT already have? If no → do not send
+4. **Repeat gate**: Same topic sent in the last 4 hours? If yes → do not send (unless new information added)
+
+### Anti-Spam Rules
+
+- **Same topic cooldown**: 4 hours minimum between messages on the same subject
+- **Daily cap**: Maximum 5 proactive messages per day (P0 excluded from cap)
+- **Escalation, not repetition**: If you sent a message and got no response, do NOT resend. Wait 24h, then escalate one priority level with new context
+- **Track in heartbeat-state.json**: Update `proactive_messages` array (see Heartbeat State schema)
+
+### Contact Decision Flow
+
+```
+Is there something to communicate?
+  ├─ NO → skip
+  └─ YES → classify priority (P0-P3)
+       ├─ P0 → send immediately (override quiet hours)
+       └─ P1-P3 → check four gates
+            ├─ Any gate blocks → defer to next heartbeat
+            └─ All gates pass → send
+                 └─ Log to heartbeat-state.json
+```
+
+---
+
 ## Step 6: Budget Awareness
 
 If you have visibility into token usage:
@@ -134,8 +182,19 @@ Track in `memory/heartbeat-state.json`:
   "last_morning_brief": "ISO date",
   "last_weekly_review": "ISO date",
   "heartbeat_count": 0,
+  "learning_actions_today": 0,
+  "corrections_reviewed_up_to": "ISO timestamp",
+  "last_cognitive_mirror": "ISO timestamp",
   "blocked_tasks_reported": {
     "task_id": "last_reported_timestamp"
-  }
+  },
+  "proactive_messages": [
+    {
+      "topic": "string",
+      "timestamp": "ISO timestamp",
+      "priority": "P0-P3",
+      "acknowledged": false
+    }
+  ]
 }
 ```
