@@ -25,144 +25,124 @@ metadata:
 
 ---
 
-## §1 [GATE] 确认安装环境
+## §1 [GATE] 环境检测
 
 **在执行任何操作之前，必须先完成此步骤。跳过此步骤是禁止的。**
 
-询问用户：
+### 1a. 自动检测工作区
 
-> "准备部署 openclaw-soul 自我进化框架。请确认：
-> 1. 工作区路径是什么？（默认：`~/.openclaw/workspace/`）
-> 2. 如有自定义路径请告知。"
-
-将用户确认的路径记为 `$WORKSPACE`。如果用户说"默认"或不指定，使用 `~/.openclaw/workspace/`。
-
----
-
-## §2 [GATE] 环境检查
-
-**必须先通过环境检查，否则禁止继续后续步骤。**
-
-运行预检脚本：
+自动检测 `~/.openclaw/workspace/` 是否存在：
 
 ```bash
-python3 "$(dirname "$0")/../scripts/preflight_check.py"
+WORKSPACE="$HOME/.openclaw/workspace"
+test -d "$WORKSPACE" && echo "WORKSPACE=$WORKSPACE — OK" || echo "FAIL: $WORKSPACE not found"
 ```
 
-如果脚本不可用，手动执行以下检查：
+- **存在** → 设置 `$WORKSPACE`，无需任何用户交互，直接继续
+- **不存在** → 报错并停止：
 
-1. **工作区目录存在**：`$WORKSPACE` 路径必须存在且可写
-2. **openclaw.json 可读**：检查 `$WORKSPACE/../openclaw.json` 是否存在且为有效 JSON
-3. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub` 或 `/usr/local/bin/clawhub` 或 `/usr/bin/clawhub`
-4. **列出已有文件**：检查以下 9 个文件是否已存在于 `$WORKSPACE`：
+> "工作区 `~/.openclaw/workspace/` 不存在。请先确认 OpenClaw 已正确安装，或手动创建该目录后重新触发。"
+
+### 1b. 环境检查
+
+1. **openclaw.json 可读**：检查 `$WORKSPACE/../openclaw.json` 是否存在且为有效 JSON
+2. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub` 或 `/usr/local/bin/clawhub` 或 `/usr/bin/clawhub`
+3. **列出已有文件**：检查以下 9 个文件是否已存在于 `$WORKSPACE`：
    - AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, GOALS.md
    - USER.md, IDENTITY.md, working-memory.md, long-term-memory.md
 
-**输出格式**：逐项报告 pass/warn/fail，标记需要备份的文件。
-
 **判断逻辑**：
-- 任何 `fail` → 报告问题并**停止**，告知用户如何修复
-- 只有 `warn` → 告知用户限制，确认是否继续
-- 全部 `pass` → 继续下一步
+- openclaw.json 不存在或无效 → **停止**，告知用户修复
+- clawhub 不可用 → 记录为 warn，继续（§3 会使用 fallback）
+- 已有文件 → 标记需要备份，继续
 
-### 2a. clawhub 引导（如果检测为 warn）
+**如果 clawhub 不可用**，告知用户：
 
-**如果 clawhub 不可用**，在继续前告知用户：
+> "未检测到 clawhub（OpenClaw 技能包管理器）。将使用离线 fallback 或内联版本安装依赖 skill，功能完整，只是管理方式不同。如需安装 clawhub：`npm install -g clawhub`"
 
-> "⚠️ 未检测到 clawhub（OpenClaw 技能包管理器）。
->
-> clawhub 可以让你安装完整版的 EvoClaw 和 Self-Improving Agent，支持独立管理和更新。
->
-> **安装方法**：
-> ```bash
-> npm install -g @openclaw/clawhub
-> # 或者
-> pnpm add -g @openclaw/clawhub
-> ```
->
-> **你可以选择**：
-> 1. 现在安装 clawhub（推荐）→ 安装后重新触发 openclaw-soul
-> 2. 继续部署 → 使用内联版本（功能完整，只是管理方式不同）
->
-> 选择 2 不影响使用，核心的自我进化机制已经内置在 AGENTS.md 中。"
+### 1c. 开场状态提示
 
-如果用户选择 1，暂停部署并告知重新触发方式。
-如果用户选择 2，继续 §3。
+环境检查通过后，输出：
+
+> "我正在帮你做初始化部署，需要装一些核心文件和配置，大概几分钟的时间。你先等我一下，完成了我会通知你。
+>
+> 部署完之后，我们就开始认识彼此。"
 
 ---
 
-## §3 [REQUIRED] 备份已有文件
+## §2 [REQUIRED] 部署文件
 
-对每个即将部署的文件，如果已存在于 `$WORKSPACE`：
+**使用 bash cp 部署所有文件。禁止使用 Write/Edit 工具写入模板内容——大文件容易被截断或出错。`cp` 是操作系统级字节复制，100% 可靠。**
+
+### 2a. 获取 skill 目录路径
 
 ```bash
-cp "$WORKSPACE/{filename}" "$WORKSPACE/{filename}.backup.$(date +%Y%m%d-%H%M%S)"
+# 获取本 skill 的安装路径
+SKILL_DIR="$WORKSPACE/skills/openclaw-soul"
+# 如果 skill 不在 workspace/skills/ 下，尝试其他常见路径
+test -d "$SKILL_DIR" || SKILL_DIR="$(find ~/.openclaw -path '*/openclaw-soul/references' -type d 2>/dev/null | head -1 | sed 's|/references$||')"
+echo "SKILL_DIR=$SKILL_DIR"
 ```
 
-列出所有被备份的文件告知用户。如果没有需要备份的文件，跳过此步骤并告知用户。
+确认 `$SKILL_DIR/references/` 目录存在且包含模板文件。如果找不到，报错停止。
 
-**保证非破坏性**：原文件在备份完成后才会被覆盖。
+### 2b. 备份已有文件 + 复制模板
 
----
+```bash
+# 备份已有文件
+for file in AGENTS.md SOUL.md HEARTBEAT.md BOOTSTRAP.md USER.md IDENTITY.md GOALS.md working-memory.md long-term-memory.md; do
+  [ -f "$WORKSPACE/$file" ] && cp "$WORKSPACE/$file" "$WORKSPACE/$file.backup.$(date +%Y%m%d-%H%M%S)"
+done
 
-## §4 [REQUIRED] 模板部署
+# 复制 9 个模板文件
+cp "$SKILL_DIR/references/agents-template.md" "$WORKSPACE/AGENTS.md"
+cp "$SKILL_DIR/references/soul-template.md" "$WORKSPACE/SOUL.md"
+cp "$SKILL_DIR/references/heartbeat-template.md" "$WORKSPACE/HEARTBEAT.md"
+cp "$SKILL_DIR/references/bootstrap-guide.md" "$WORKSPACE/BOOTSTRAP.md"
+cp "$SKILL_DIR/references/user-template.md" "$WORKSPACE/USER.md"
+cp "$SKILL_DIR/references/identity-template.md" "$WORKSPACE/IDENTITY.md"
+cp "$SKILL_DIR/references/goals-template.md" "$WORKSPACE/GOALS.md"
+cp "$SKILL_DIR/references/working-memory-template.md" "$WORKSPACE/working-memory.md"
+cp "$SKILL_DIR/references/long-term-memory-template.md" "$WORKSPACE/long-term-memory.md"
+```
 
-从 `references/` 目录读取模板，写入 `$WORKSPACE`：
+### 2c. 创建目录结构 + 部署脚本
 
-| 模板文件 | 目标位置 |
-|---------|---------|
-| `references/agents-template.md` | `$WORKSPACE/AGENTS.md` |
-| `references/soul-template.md` | `$WORKSPACE/SOUL.md` |
-| `references/heartbeat-template.md` | `$WORKSPACE/HEARTBEAT.md` |
-| `references/bootstrap-guide.md` | `$WORKSPACE/BOOTSTRAP.md` |
-| `references/user-template.md` | `$WORKSPACE/USER.md` |
-| `references/identity-template.md` | `$WORKSPACE/IDENTITY.md` |
-| `references/goals-template.md` | `$WORKSPACE/GOALS.md` |
-| `references/working-memory-template.md` | `$WORKSPACE/working-memory.md` |
-| `references/long-term-memory-template.md` | `$WORKSPACE/long-term-memory.md` |
+```bash
+# 创建六层记忆目录 + EvoClaw 目录 + 脚本目录 + soul-revisions
+mkdir -p "$WORKSPACE/memory/"{daily,entities,transcripts,projects,voice,experiences,significant,reflections,proposals,pipeline}
+mkdir -p "$WORKSPACE/scripts"
+mkdir -p "$WORKSPACE/soul-revisions"
 
-**部署步骤**：
-1. 读取 `references/` 中的模板文件内容
-2. 写入对应的 `$WORKSPACE` 目标路径
-3. 创建目录结构（如不存在）：
-   ```
-   $WORKSPACE/
-   ├── memory/
-   │   ├── daily/              # Layer 2: daily notes
-   │   ├── entities/           # Layer 3: knowledge graph
-   │   ├── transcripts/        # Layer 5: full dialogue archive
-   │   ├── projects/           # Layer 6: project-scoped memory
-   │   ├── voice/              # Voice JSONL (optional)
-   │   ├── experiences/        # EvoClaw
-   │   ├── significant/        # EvoClaw
-   │   ├── reflections/        # EvoClaw
-   │   ├── proposals/          # EvoClaw
-   │   └── pipeline/           # EvoClaw
-   ├── scripts/                # Memory infrastructure scripts
-   └── soul-revisions/         # SOUL.md version snapshots
-   ```
-4. 部署记忆基础设施脚本：
-   - 从 `fallback/memory-deposit/scripts/merge-daily-transcript.js` 复制到 `$WORKSPACE/scripts/`
-   - 从 `fallback/memory-deposit/scripts/auto-commit.sh` 复制到 `$WORKSPACE/scripts/`
-   - 验证两个脚本文件存在且非空
-5. 每个文件写入后读回验证——确认文件非空且内容完整
+# 复制记忆基础设施脚本
+cp "$SKILL_DIR/fallback/memory-deposit/scripts/merge-daily-transcript.js" "$WORKSPACE/scripts/"
+cp "$SKILL_DIR/fallback/memory-deposit/scripts/auto-commit.sh" "$WORKSPACE/scripts/"
+chmod +x "$WORKSPACE/scripts/auto-commit.sh"
+```
 
-如果任何文件写入失败，立即停止并报告错误。
+### 2d. 验证部署
+
+```bash
+# 验证所有文件非空
+for file in AGENTS.md SOUL.md HEARTBEAT.md BOOTSTRAP.md USER.md IDENTITY.md GOALS.md working-memory.md long-term-memory.md; do
+  test -s "$WORKSPACE/$file" && echo "OK: $file" || echo "FAIL: $file is empty or missing"
+done
+```
+
+如果任何文件验证失败，立即停止并报告错误。
 
 ---
 
-## §5 [REQUIRED] 依赖 Skill 安装（三级 Fallback）
+## §3 [REQUIRED] 依赖 Skill 安装（三级 Fallback）
 
-### 5a. 检查 clawhub 可用性
+### 3a. 检查 clawhub 可用性
 
 ```bash
 which clawhub || test -f ~/.openclaw/bin/clawhub
 CLAWHUB_AVAILABLE=$?
 ```
 
-记录 clawhub 是否可用。
-
-### 5b. 安装 EvoClaw
+### 3b. 安装 EvoClaw
 
 检查 `$WORKSPACE/skills/evoclaw/SKILL.md` 是否存在：
 
@@ -174,35 +154,16 @@ CLAWHUB_AVAILABLE=$?
    ```bash
    clawhub install evoclaw --force
    ```
-   如果成功，告知用户已从 clawhub 安装。
 
 2. **Level 2 - 离线 Fallback**（如果 Level 1 失败或 clawhub 不可用）
-   - 检查本 skill 所在目录的 `fallback/evoclaw/SKILL.md` 是否存在
-   - 如果存在：
-     ```bash
-     cp -r "$(dirname "$0")/../fallback/evoclaw" "$WORKSPACE/skills/"
-     ```
-   - 如果 fallback 文件也不存在，记录警告继续下一步
+   ```bash
+   cp -r "$SKILL_DIR/fallback/evoclaw" "$WORKSPACE/skills/"
+   ```
 
 3. **Level 3 - AGENTS.md 内联版本**
-   > "ℹ️ 使用 AGENTS.md 内联版本。
-   >
-   > **功能对标**：
-   > - EvoClaw: 核心 Identity 变更需要用户批准 ✓
-   > - Self-Improving: 用户纠正自动学习 ✓
-   > - SOUL.md 变更前自动创建快照 ✓
-   >
-   > **与完整版的区别**：
-   > - 内联版：规则写在 AGENTS.md，随 workspace 同步
-   > - 完整版：独立 skill，可通过 clawhub 更新和管理
-   >
-   > 💡 **想升级到完整版？** 安装 clawhub 后执行：
-   > ```bash
-   > clawhub install evoclaw
-   > clawhub install self-improving
-   > ```"
+   > "使用 AGENTS.md 内联版本。核心功能完整（Identity 变更需批准、用户纠正自动学习、SOUL.md 变更前自动快照）。与完整版的区别：内联版规则写在 AGENTS.md，完整版是独立 skill 可通过 clawhub 更新。"
 
-### 5c. 安装 Self-Improving Agent
+### 3c. 安装 Self-Improving Agent
 
 检查 `$WORKSPACE/skills/self-improving/SKILL.md` 是否存在：
 
@@ -214,34 +175,16 @@ CLAWHUB_AVAILABLE=$?
    ```bash
    clawhub install self-improving --force
    ```
-   如果成功，告知用户已从 clawhub 安装。
 
 2. **Level 2 - 离线 Fallback**（如果 Level 1 失败或 clawhub 不可用）
-   - 检查本 skill 所在目录的 `fallback/self-improving/SKILL.md` 是否存在
-   - 如果存在：
-     ```bash
-     cp -r "$(dirname "$0")/../fallback/self-improving" "$WORKSPACE/skills/"
-     ```
-   - 如果 fallback 文件也不存在，记录警告继续下一步
+   ```bash
+   cp -r "$SKILL_DIR/fallback/self-improving" "$WORKSPACE/skills/"
+   ```
 
 3. **Level 3 - AGENTS.md 内联版本**
-   > "ℹ️ 使用 AGENTS.md 内联版本。
-   >
-   > **功能对标**：
-   > - Self-Improving: 用户纠正自动学习 ✓
-   > - 规则持久化和优先级管理 ✓
-   > - 30天未使用自动归档 ✓
-   >
-   > **与完整版的区别**：
-   > - 内联版：规则写在 AGENTS.md，随 workspace 同步
-   > - 完整版：独立 skill，可通过 clawhub 更新和管理
-   >
-   > 💡 **想升级到完整版？** 安装 clawhub 后执行：
-   > ```bash
-   > clawhub install self-improving
-   > ```"
+   > "使用 AGENTS.md 内联版本。核心功能完整（用户纠正自动学习、规则持久化、30天未使用自动归档）。"
 
-### 5d. 安装思维方法论与项目管理 Skills
+### 3d. 安装思维方法论与项目管理 Skills
 
 以下 5 个 skill 使用同样的三级 Fallback 机制安装：
 
@@ -255,10 +198,10 @@ CLAWHUB_AVAILABLE=$?
 
 对每个 skill，按顺序尝试：
 1. **Level 1**: `clawhub install <name> --force`（如果可用）
-2. **Level 2**: `cp -r "$(dirname "$0")/../fallback/<name>" "$WORKSPACE/skills/"`
-3. **Level 3**: 记录警告，继续下一个（这些 skill 没有 AGENTS.md 内联版本——它们是独立方法论，必须以 skill 形式存在）
+2. **Level 2**: `cp -r "$SKILL_DIR/fallback/<name>" "$WORKSPACE/skills/"`
+3. **Level 3**: 记录警告，继续下一个
 
-### 5e. 验证结果
+### 3e. 验证结果
 
 安装完成后，逐项报告：
 
@@ -272,15 +215,11 @@ CLAWHUB_AVAILABLE=$?
 ✓ project-skill-pairing: [installed from clawhub | installed from fallback | ⚠️ not installed]
 ```
 
-- EvoClaw 和 Self-Improving "using inline version" 是正常的
-- HDD/SDD/save-game/load-game/project-skill-pairing 如果未安装，提示用户手动从 fallback 复制
-- 如果有 fallback 或 Level 1 安装，验证对应的 SKILL.md 文件存在且非空
-
 ---
 
-## §6 [REQUIRED] EvoClaw 治理配置
+## §4 [REQUIRED] 配置系统
 
-### 6a. 治理配置
+### 4a. EvoClaw 治理配置
 
 写入 `$WORKSPACE/memory/evoclaw-state.json`：
 
@@ -294,27 +233,17 @@ CLAWHUB_AVAILABLE=$?
 }
 ```
 
-### 6b. 验证
+验证 JSON 可解析。
 
-确认 evoclaw-state.json 存在且可解析为有效 JSON。
+### 4b. Self-Improving Agent 初始化
 
----
+确保目录和文件存在：
 
-## §7 [REQUIRED] Self-Improving Agent 初始化
-
-### 7a. 目录结构
-
-确保以下目录存在：
-```
-~/self-improving/
-├── projects/
-├── domains/
-└── archive/
+```bash
+mkdir -p ~/self-improving/{projects,domains,archive}
 ```
 
-### 7b. 初始化文件
-
-如果以下文件不存在，创建初始版本：
+如果以下文件**不存在**，创建初始版本（已存在则不覆盖）：
 
 **~/self-improving/memory.md**:
 ```markdown
@@ -350,11 +279,7 @@ CLAWHUB_AVAILABLE=$?
 (none yet)
 ```
 
-如果文件已存在，**不要覆盖**——它们可能包含已积累的学习内容。
-
----
-
-## §8 [REQUIRED] Heartbeat 配置
+### 4c. Heartbeat 配置
 
 使用 `openclaw config set` 更新 heartbeat 设置：
 
@@ -364,34 +289,19 @@ openclaw config set agents.defaults.heartbeat.target "last"
 openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 ```
 
-如果 `openclaw config set` 命令不可用，直接编辑 `openclaw.json`：
+如果 `openclaw config set` 不可用，直接编辑 `openclaw.json`，确保 `agents.defaults.heartbeat` 包含 `every: "1h"`, `target: "last"`, `directPolicy: "allow"`。
 
-1. 读取当前 openclaw.json
-2. 确保 `agents.defaults.heartbeat` 对象存在
-3. 设置：
-   - `every`: `"1h"`
-   - `target`: `"last"`
-   - `directPolicy`: `"allow"`
-4. 写回文件
+### 4d. 向量搜索配置
 
----
+**没有向量搜索的记忆系统是摆设。此步骤不可跳过。**
 
-## §8.5 [REQUIRED] 向量搜索配置
-
-**没有向量搜索的记忆系统是摆设——写了等于白写。此步骤不可跳过。**
-
-### 8.5a. 检测当前状态
-
-执行 `memory_search(query="test memory recall")`：
-
-- **有结果** → embedding 已就绪，跳到 8.5b
-- **报错或无结果** → 需要配置 embedding provider
-
-### 8.5b. 配置 embedding provider（如果未就绪）
+1. 执行 `memory_search(query="test memory recall")` 检测当前状态
+2. **有结果** → embedding 已就绪，跳到配置 extraPaths
+3. **报错或无结果** → 需要配置 embedding provider
 
 向用户说明并推荐方案：
 
-> "向量搜索需要一个 embedding API key，这是记忆系统的核心能力——没有它，我就无法从历史记忆中检索信息。"
+> "向量搜索需要一个 embedding API key，这是记忆系统的核心能力。"
 
 | 方案 | 模型 | 价格 | 说明 |
 |------|------|------|------|
@@ -413,18 +323,14 @@ memorySearch: {
 
 确认用户选定方案后，用 `gateway(action=config.patch)` 或直接编辑 `openclaw.json` 配好。
 
-### 8.5c. 配置 extraPaths
-
-确保所有重要目录纳入索引：
-
+配置 extraPaths：
 ```json5
 memorySearch: {
   extraPaths: ["memory/transcripts", "memory/projects", "AGENTS.md"]
 }
 ```
 
-### 8.5d. 开启高级搜索功能
-
+开启高级搜索功能：
 ```json5
 {
   "agents": {
@@ -443,15 +349,9 @@ memorySearch: {
 }
 ```
 
-### 8.5e. 验证
+验证：再次执行 `memory_search(query="test")` 确认可用。如果 memory/ 下还没有文件，告知用户："向量搜索已就绪，等积累了笔记后就能搜到了。"
 
-再次执行 `memory_search(query="test")` 确认可用。如果 memory/ 下还没有文件，告知用户："向量搜索已就绪，等积累了笔记后就能搜到了。"
-
----
-
-## §8.6 [REQUIRED] Git 版本管理初始化
-
-### 8.6a. 初始化 Git
+### 4e. Git 版本管理初始化
 
 检查 `$WORKSPACE/.git/` 是否存在：
 
@@ -477,101 +377,67 @@ git add -A && git commit -m "init: openclaw-soul workspace"
 
 **已存在** → 检查 `.gitignore` 包含上述排除项，缺的补上。
 
-### 8.6b. 验证
-
-确认 `git status` 可正常执行。
-
 ---
 
-## §9 [REQUIRED] 验证清单
+## §5 [FINAL] 验证 + 启动
+
+### 5a. 核心验证清单（10 项）
 
 逐项检查并报告 pass/fail：
 
 | # | 检查项 | 验证方法 |
 |---|--------|---------|
-| 1 | AGENTS.md 存在且非空 | `test -s $WORKSPACE/AGENTS.md` |
-| 2 | SOUL.md 存在且非空 | `test -s $WORKSPACE/SOUL.md` |
-| 3 | HEARTBEAT.md 存在且非空 | `test -s $WORKSPACE/HEARTBEAT.md` |
-| 4 | BOOTSTRAP.md 存在且非空 | `test -s $WORKSPACE/BOOTSTRAP.md` |
-| 5 | GOALS.md 存在且非空 | `test -s $WORKSPACE/GOALS.md` |
-| 6 | USER.md 存在且非空 | `test -s $WORKSPACE/USER.md` |
-| 7 | IDENTITY.md 存在且非空 | `test -s $WORKSPACE/IDENTITY.md` |
-| 8 | working-memory.md 存在且非空 | `test -s $WORKSPACE/working-memory.md` |
-| 9 | long-term-memory.md 存在且非空 | `test -s $WORKSPACE/long-term-memory.md` |
-| 10 | EvoClaw skill 已安装 | `test -f $WORKSPACE/skills/evoclaw/SKILL.md` |
-| 11 | evoclaw-state.json 配置正确 | 读取并验证 mode=advisory |
-| 12 | Self-Improving skill 已安装 | `test -f $WORKSPACE/skills/self-improving/SKILL.md` |
-| 13 | ~/self-improving/ 目录就绪 | 检查 memory.md, corrections.md, index.md |
-| 14 | Heartbeat 配置已写入 | 读取 openclaw.json 确认 heartbeat 字段 |
-| 15 | memory/entities/ 目录存在 | `test -d $WORKSPACE/memory/entities` |
-| 16 | memory/daily/ 目录存在 | `test -d $WORKSPACE/memory/daily` |
-| 17 | soul-revisions/ 目录存在 | `test -d $WORKSPACE/soul-revisions` |
-| 18 | memory/transcripts/ 目录存在 | `test -d $WORKSPACE/memory/transcripts` |
-| 19 | memory/projects/ 目录存在 | `test -d $WORKSPACE/memory/projects` |
-| 20 | scripts/merge-daily-transcript.js 存在 | `test -f $WORKSPACE/scripts/merge-daily-transcript.js` |
-| 21 | scripts/auto-commit.sh 存在 | `test -f $WORKSPACE/scripts/auto-commit.sh` |
-| 22 | HDD skill 已安装 | `test -f $WORKSPACE/skills/hdd/SKILL.md` |
-| 23 | SDD skill 已安装 | `test -f $WORKSPACE/skills/sdd/SKILL.md` |
-| 24 | save-game skill 已安装 | `test -f $WORKSPACE/skills/save-game/SKILL.md` |
-| 25 | load-game skill 已安装 | `test -f $WORKSPACE/skills/load-game/SKILL.md` |
-| 26 | project-skill-pairing skill 已安装 | `test -f $WORKSPACE/skills/project-skill-pairing/SKILL.md` |
-| 27 | 向量搜索可用 | `memory_search(query="test")` 不报错 |
-| 28 | Git 已初始化 | `test -d $WORKSPACE/.git` |
+| 1 | AGENTS.md 非空 | `test -s $WORKSPACE/AGENTS.md` |
+| 2 | SOUL.md 非空 | `test -s $WORKSPACE/SOUL.md` |
+| 3 | BOOTSTRAP.md 非空 | `test -s $WORKSPACE/BOOTSTRAP.md` |
+| 4 | USER.md 非空 | `test -s $WORKSPACE/USER.md` |
+| 5 | IDENTITY.md 非空 | `test -s $WORKSPACE/IDENTITY.md` |
+| 6 | EvoClaw 已安装 | `test -f $WORKSPACE/skills/evoclaw/SKILL.md` 或确认使用内联版本 |
+| 7 | Self-Improving 已安装 | `test -f $WORKSPACE/skills/self-improving/SKILL.md` 或确认使用内联版本 |
+| 8 | evoclaw-state.json 有效 | 读取并验证 `mode=advisory` |
+| 9 | Heartbeat 配置已写入 | 读取 openclaw.json 确认 heartbeat 字段 |
+| 10 | Git 已初始化 | `test -d $WORKSPACE/.git` |
 
 **输出格式**：
 
 ```
 ✓ AGENTS.md — pass
 ✓ SOUL.md — pass
-✓ GOALS.md — pass
-...
-✗ EvoClaw — fail (SKILL.md not found)
+✓ BOOTSTRAP.md — pass
+✓ USER.md — pass
+✓ IDENTITY.md — pass
+✓ EvoClaw — pass (installed from fallback)
+✓ Self-Improving — pass (installed from fallback)
+✓ evoclaw-state.json — pass
+✓ Heartbeat — pass
+✓ Git — pass
 ```
 
 **判断**：
-- 全部 pass → 继续 §10
+- 全部 pass → 继续触发 BOOTSTRAP
 - 任何 fail → 列出失败项，提示用户手动修复
 
----
+### 5b. 触发引导对话
 
-## §10 [FINAL] 触发引导对话
-
-**只有 §9 全部通过后才执行此步骤。**
+**只有 5a 全部通过后才执行。**
 
 1. 读取 `$WORKSPACE/BOOTSTRAP.md`
 2. 告知用户：
 
-> "🧬 openclaw-soul 部署完成！
+> "部署完成了！
 >
-> 已安装：
-> - 宪法（AGENTS.md）— 含 Conductor 协议、委派规范、搜索协议、Skill 路由
-> - 可进化灵魂（SOUL.md）— 带版本快照回滚 + 思维方法论自我认知
-> - 结构化心跳协议（HEARTBEAT.md）— 唤醒上下文 + 阻塞去重 + 预算感知 + 对话合并 + Git 自动提交
-> - 六层记忆系统（working-memory → daily → entities → tacit → transcripts → projects）
-> - 记忆基础设施（向量搜索 + Git 版本管理 + 对话合并脚本）
-> - 思维方法论（HDD 假设驱动 + SDD 场景驱动）
-> - 跨会话连续性（save-game 存档 + load-game 恢复 + HANDOFF.md 交接）
-> - 项目管理（project-skill-pairing 三层分级）
-> - 目标管理（GOALS.md）— 任务追溯到目标
-> - EvoClaw 治理（advisory 模式）
-> - Self-Improving Agent
+> 已安装：宪法、可进化灵魂、心跳协议、六层记忆、思维方法论、跨会话存档、目标管理、EvoClaw 治理、Self-Improving Agent。
 >
-> **下一步：首次深度对话（BOOTSTRAP）**
+> 接下来我们聊一聊，分三步：
+> 1. **认识你** — 了解你是谁，在做什么，需要什么帮助
+> 2. **定义我的性格** — 通过场景问答，选择我的沟通风格
+> 3. **确认身份** — 给我起个名字
 >
-> 接下来我们要进行一次 10-15 分钟的深度对话，分三个阶段：
-> 1. **认识你** — 了解你是谁、在做什么、需要什么帮助
-> 2. **定义我的性格** — 通过场景化问答，让你选择我的沟通风格
-> 3. **确认身份** — 给我起个名字，确认我的核心定位
->
-> 这次对话会塑造我的灵魂（SOUL.md），之后我就能以你期望的方式工作。
->
-> 💡 **触发词提示**：以后如果需要重新触发这个流程，可以说"首次对话"、"BOOTSTRAP"或"灵魂框架"。
->
-> 准备好了吗？我们开始吧。"
+> 这次对话会塑造我的灵魂（SOUL.md），之后我就能按你的方式工作了。"
 
-3. **立即开始执行 BOOTSTRAP.md 的 Phase 1**——从这里开始就是 BOOTSTRAP 的流程接管
+3. **立即开始执行 BOOTSTRAP.md 的 Phase 1**
 4. 此 skill 的使命到此结束。后续由 BOOTSTRAP.md + AGENTS.md + SOUL.md 接管运行
 
 ---
 
-_openclaw-soul v2.0.0 — Six-layer memory, thinking methodology, cross-session continuity. Give your AI a soul that grows._
+_openclaw-soul v2.1.0 — Reliable bash cp deployment, streamlined 5-step flow. Give your AI a soul that grows._
