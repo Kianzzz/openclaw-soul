@@ -43,6 +43,14 @@ Plus:
 - Skill directories: `skills/evoclaw/`, `skills/self-improving/`
 - Configuration: `evoclaw-state.json`, heartbeat settings in `openclaw.json`
 
+## v2.2.0: Dynamic Personality System
+
+**v2.2.0 improvements:**
+- **Dynamic Personality System**: Observes user communication patterns over 10 conversations
+- **Female Character Focus**: Character recommendations restricted to female characters
+- **De-anchored Inference**: Removed specific character examples to enable true dynamic reasoning
+- **Heartbeat Integration**: Personality proposals triggered via OpenClaw's heartbeat mechanism
+
 ## v2.1.0: Reliable Deployment & Streamlined Flow
 
 **v2.1.0 improvements:**
@@ -176,10 +184,11 @@ Copy the 9 template files from `references/` to `~/.openclaw/workspace/` manuall
 
 ## Version History
 
-- **v1.0.0**: Initial self-evolution framework
-- **v1.1.0**: PARA memory architecture + structured heartbeat + goal management
+- **v2.2.0**: Dynamic personality system with female character focus and de-anchored inference
+- **v2.1.0**: Reliable bash cp deployment + streamlined 5-step flow
 - **v1.2.0**: Three-level fallback system for zero-dependency deployment
-- **v2.1.0**: Reliable bash cp deployment + streamlined 5-step flow (this release)
+- **v1.1.0**: PARA memory architecture + structured heartbeat + goal management
+- **v1.0.0**: Initial self-evolution framework
 
 ## License
 
@@ -208,4 +217,4 @@ Contributions welcome. This framework is designed to evolve — propose changes 
 
 ---
 
-**openclaw-soul v2.1.0** — Self-evolving AI, always ready. 🧬
+**openclaw-soul v2.2.0** — Self-evolving AI, always ready. 🧬
