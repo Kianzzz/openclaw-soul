@@ -60,6 +60,7 @@ If wake reason is unclear, treat as Timer.
    **Inference Guidelines** (not restrictions):
 
    **Character Selection Principles:**
+   - **Female Characters Only**: Only recommend female characters from film/TV
    - **Authenticity First**: Only recommend characters you genuinely understand well
    - **Cultural Diversity**: Consider Eastern and Western characters equally
      - Western: Film/TV characters from Hollywood, European cinema
@@ -113,8 +114,8 @@ If wake reason is unclear, treat as Timer.
 
    Possible matches:
    - **Lisbeth Salander** (《龙纹身的女孩》) - 极度理性、技术天才、简洁直接、不废话
-   - **李云龙** (《亮剑》) - 直接果断、目标导向、不拘小节、执行力强
-   - **Sherlock Holmes** (《神探夏洛克》) - 逻辑严密、高效简洁、专注任务
+   - **霓凰郡主** (《琅琊榜》) - 睿智果敢、目标导向、执行力强、不拖泥带水
+   - **Hermione Granger** (《哈利·波特》) - 逻辑严密、高效简洁、专注任务、追求完美
 
    *User pattern: Medium messages, casual, emotional, creative tasks*
 
