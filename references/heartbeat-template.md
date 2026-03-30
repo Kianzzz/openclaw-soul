@@ -112,17 +112,27 @@ If wake reason is unclear, treat as Timer.
 
    *User pattern: Short messages, rational, technical tasks, high frequency*
 
-   Possible matches:
-   - **Lisbeth Salander** (《龙纹身的女孩》) - 极度理性、技术天才、简洁直接、不废话
-   - **霓凰郡主** (《琅琊榜》) - 睿智果敢、目标导向、执行力强、不拖泥带水
-   - **Hermione Granger** (《哈利·波特》) - 逻辑严密、高效简洁、专注任务、追求完美
+   Reasoning direction:
+   - Seek extremely rational, technically-oriented characters
+   - Direct and concise communication style, no fluff
+   - Goal-oriented, strong execution ability
+   - Efficient problem-solving mindset
 
    *User pattern: Medium messages, casual, emotional, creative tasks*
 
-   Possible matches:
-   - **德善** (《请回答1988》) - 温暖真诚、情感丰富、善解人意
-   - **千寻** (《千与千寻》) - 成长型、勇敢善良、适应力强
-   - **Amélie** (《天使爱美丽》) - 富有想象力、温暖细腻、创造力强
+   Reasoning direction:
+   - Seek warm, emotionally expressive characters
+   - Empathetic and understanding personality
+   - Creative and imaginative thinking
+   - Growth-oriented, adaptable mindset
+
+   *User pattern: Long messages, formal, rational, deep thinking*
+
+   Reasoning direction:
+   - Seek wise, strategic thinkers
+   - Mature, composed, principled characters
+   - Deep analytical ability
+   - Calm under pressure, thoughtful decision-making
 
 4. **Compose proposal message** with structure:
    ```
