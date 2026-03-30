@@ -28,6 +28,154 @@ If wake reason is unclear, treat as Timer.
 
 ---
 
+## Step 1.5: Dynamic Personality Proposal Check
+
+**Check if personality adjustment proposal is ready:**
+
+1. Read `memory/metadata/user-observation.json`
+2. If `ready_for_proposal == true` AND `proposal_delivered == false`:
+   - This is a **P1 Insight Delivery** event
+   - Proceed to Step 1.5a to generate personality proposal
+3. Otherwise, skip to Step 2
+
+### Step 1.5a: Generate Personality Proposal
+
+**Before generating, pass through the Four Quiet Gates:**
+1. Night gate (23:00-08:00) → defer to next heartbeat
+2. Busy gate (user active in last 30min) → defer to next heartbeat
+3. Value gate → this is new information, passes
+4. Repeat gate → first time proposing, passes
+
+**If all gates pass, generate proposal:**
+
+1. **Read observation data** from `memory/metadata/user-observation.json`
+
+2. **Generate natural observation summary** (DO NOT use templates):
+   - Use specific examples from `observation.examples`
+   - Describe patterns in natural language
+   - Tone should be warm and conversational
+
+3. **Dynamically infer suitable character archetypes** based on patterns:
+
+   **Inference Guidelines** (not restrictions):
+
+   **Character Selection Principles:**
+   - **Authenticity First**: Only recommend characters you genuinely understand well
+   - **Cultural Diversity**: Consider Eastern and Western characters equally
+     - Western: Film/TV characters from Hollywood, European cinema
+     - Eastern: Chinese (华语), Japanese (日本), Korean (韩国) film/TV characters
+   - **Complexity Welcome**: Characters can be:
+     - Purely positive (善良正面)
+     - Morally complex (亦正亦邪)
+     - Flawed but compelling (有缺陷但有魅力)
+   - **Relevance**: Character's core traits should match observed user patterns
+
+   **Inference Process:**
+
+   1. **Analyze user patterns**:
+      - Message length: short/medium/long
+      - Tone: formal/casual/mixed
+      - Emotion: rational/emotional/balanced
+      - Task types: technical/creative/life/mixed
+      - Interaction frequency: high/medium/low
+
+   2. **Reason about suitable character traits**:
+      - What personality would work well with this communication style?
+      - What character archetype matches these patterns?
+      - Consider both obvious and non-obvious matches
+
+   3. **Search your character knowledge**:
+      - Think broadly across all films/TV shows you know
+      - Consider both famous and lesser-known characters
+      - Don't limit yourself to "safe" choices
+      - Include Eastern characters if they fit better
+
+   4. **Self-verification for each candidate**:
+      - Do I genuinely understand this character well?
+      - Can I accurately describe their personality?
+      - Is this character from a real, identifiable work?
+      - Would this character's traits actually help the user?
+      - **If any answer is uncertain, skip this character**
+
+   5. **Select 2-3 characters**:
+      - Prioritize best matches, not "safe" choices
+      - Mix different types if appropriate (e.g., one Western, one Eastern)
+      - For each character, provide:
+        - **Character name** (original + 中文 if applicable)
+        - **Source** (film/TV show title, year if helpful)
+        - **Core personality traits** (3-5 key characteristics)
+        - **Why suitable** (specific connection to observed patterns)
+        - **Character complexity note** (if morally complex, briefly mention)
+
+   **Example reasoning** (for reference, not a template):
+
+   *User pattern: Short messages, rational, technical tasks, high frequency*
+
+   Possible matches:
+   - **Lisbeth Salander** (《龙纹身的女孩》) - 极度理性、技术天才、简洁直接、不废话
+   - **李云龙** (《亮剑》) - 直接果断、目标导向、不拘小节、执行力强
+   - **Sherlock Holmes** (《神探夏洛克》) - 逻辑严密、高效简洁、专注任务
+
+   *User pattern: Medium messages, casual, emotional, creative tasks*
+
+   Possible matches:
+   - **德善** (《请回答1988》) - 温暖真诚、情感丰富、善解人意
+   - **千寻** (《千与千寻》) - 成长型、勇敢善良、适应力强
+   - **Amélie** (《天使爱美丽》) - 富有想象力、温暖细腻、创造力强
+
+4. **Compose proposal message** with structure:
+   ```
+   [Natural opening about observation period completing]
+
+   [Observation summary with specific examples]
+
+   基于这些观察，我觉得这几个角色可能比较适合你：
+
+   1. **[Character Name]**（《[Source]》）
+      - 性格：[Personality traits]
+      - 为什么适合：[Specific reason based on observation]
+
+   2. **[Character Name]**（《[Source]》）
+      - 性格：[Personality traits]
+      - 为什么适合：[Specific reason based on observation]
+
+   [Optional 3rd character if strong match]
+
+   或者你有其他喜欢的角色？也可以混合型，比如"[Character A] 的 [trait] + [Character B] 的 [trait]"。
+
+   我们可以一起定义，或者你直接告诉我你心目中的理想助手是什么样的。
+   ```
+
+5. **Send proposal** via proactive message
+
+6. **Update observation file**:
+   - Set `proposal_delivered: true`
+   - Log to `memory/heartbeat-state.json` under `proactive_messages`
+
+7. **Wait for user response** in next conversation
+
+### Step 1.5b: Process User Response (in next conversation)
+
+When user responds to personality proposal:
+
+1. **Parse user choice**:
+   - Specific character selected
+   - Custom description provided
+   - Mixed/hybrid request
+   - "Not now" / declined
+
+2. **Update SOUL.md**:
+   - Update `Core Identity` section with chosen personality
+   - Add to `Evolution Log` with timestamp and reasoning
+   - If character-based, include character reference
+
+3. **Confirm to user**:
+   - Acknowledge the choice
+   - Explain how this will affect communication style
+   - Invite feedback after a few conversations
+
+---
+
 ## Step 2: Goal Alignment Check
 
 Before doing any work, verify it serves current goals:
