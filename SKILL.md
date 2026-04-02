@@ -1,6 +1,6 @@
 ---
 name: openclaw-soul
-description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、六层记忆架构、目标管理、思维方法论（HDD/SDD）、跨会话存档（save-game/load-game），并通过场景化对话引导用户定义 Agent 性格。自动配置 EvoClaw（审批制进化）和 Self-Improving Agent（自主学习）。触发场景：(1) 用户说"灵魂框架"、"部署灵魂"、"部署灵魂系统" (2) 用户说"BOOTSTRAP"、"首次对话"、"第一次对话" (3) 用户说"安装进化框架"、"部署进化框架" (4) 用户提到"openclaw-soul"。注意：这是 OpenClaw 部署的第一步，完成后会引导使用 openclaw-setup 配置技术参数。
+description: OpenClaw 自我进化框架一键部署。安装宪法(AGENTS.md)、可进化灵魂(SOUL.md)、心跳系统、六层记忆架构、目标管理、思维方法论（HDD/SDD）、安全审查（skill-vetter），并通过场景化对话引导用户定义 Agent 性格。用户可选安装 EvoClaw（审批制进化）、Self-Improving Agent（自主学习）等依赖 Skill。触发场景：(1) 用户说"灵魂框架"、"部署灵魂"、"部署灵魂系统" (2) 用户说"BOOTSTRAP"、"首次对话"、"第一次对话" (3) 用户说"安装进化框架"、"部署进化框架" (4) 用户提到"openclaw-soul"。注意：这是 OpenClaw 部署的第一步，完成后会引导使用 openclaw-setup 配置技术参数。
 metadata:
   clawdbot:
     emoji: "🧬"
@@ -15,7 +15,7 @@ metadata:
 
 **安装内容**：
 - 9 个工作区文件（AGENTS.md, SOUL.md, HEARTBEAT.md, BOOTSTRAP.md, USER.md, IDENTITY.md, GOALS.md, working-memory.md, long-term-memory.md）
-- 7 个依赖 skill（evoclaw, self-improving, hdd, sdd, save-game, load-game, project-skill-pairing）
+- 5 个可选依赖 skill（evoclaw, self-improving, skill-vetter, hdd, sdd）
 - 2 个记忆基础设施脚本（merge-daily-transcript.js, auto-commit.sh）
 - **动态人格系统**（user-observation hook + 角色推理逻辑）
 - Heartbeat 定时任务配置
@@ -44,7 +44,47 @@ test -d "$WORKSPACE" && echo "WORKSPACE=$WORKSPACE — OK" || echo "FAIL: $WORKS
 
 > "工作区 `~/.openclaw/workspace/` 不存在。请先确认 OpenClaw 已正确安装，或手动创建该目录后重新触发。"
 
-### 1b. 环境检查
+### 1b. 权限等级检查
+
+**检查当前 OpenClaw 的权限等级，避免后续操作频繁弹出授权确认。**
+
+```bash
+# 读取当前权限等级
+openclaw config get agents.defaults.permissions 2>/dev/null || echo "NOT_SET"
+```
+
+权限等级说明：
+
+| 等级 | 含义 | 适用场景 |
+|------|------|---------|
+| `restricted` | 每个文件操作都需要授权 | 生产环境、高安全要求 |
+| `standard` | 工作区内操作自动授权，工作区外需确认 | 日常使用（推荐） |
+| `elevated` | 大部分操作自动授权，仅危险操作需确认 | 开发调试 |
+
+**判断逻辑**：
+
+- 权限等级为 `standard` 或 `elevated` → 继续
+- 权限等级为 `restricted` 或未设置 → 使用 `AskUserQuestion` 询问用户：
+
+**问题**："当前权限等级较低，灵魂框架部署需要大量文件操作（复制模板、创建目录、写入配置等），低权限下每一步都会弹出授权确认，体验会很差。建议提升权限等级。"
+
+**选项**：
+
+1. **设置为 standard（推荐）**
+   - 说明：工作区（`~/.openclaw/workspace/`）内的操作自动授权，工作区外的操作仍需确认。安全性和便利性的平衡点。
+   - 设置方式：`openclaw config set agents.defaults.permissions "standard"`
+
+2. **设置为 elevated**
+   - 说明：大部分操作自动授权，仅删除文件、修改系统配置等危险操作需要确认。适合信任环境下的快速部署。
+   - 设置方式：`openclaw config set agents.defaults.permissions "elevated"`
+
+3. **保持当前等级，继续部署**
+   - 说明：保持低权限，每一步操作都需要你手动授权确认。操作会多一些，但完全在你的控制下。
+
+用户选择 1 或 2 → 执行对应的 `openclaw config set` 命令，确认生效后继续
+用户选择 3 → 继续部署（提醒用户后续会有较多授权确认）
+
+### 1c. 环境检查
 
 1. **openclaw.json 可读**：检查 `$WORKSPACE/../openclaw.json` 是否存在且为有效 JSON
 2. **clawhub CLI 可用**：`which clawhub` 或检查 `~/.openclaw/bin/clawhub` 或 `/usr/local/bin/clawhub` 或 `/usr/bin/clawhub`
@@ -54,14 +94,25 @@ test -d "$WORKSPACE" && echo "WORKSPACE=$WORKSPACE — OK" || echo "FAIL: $WORKS
 
 **判断逻辑**：
 - openclaw.json 不存在或无效 → **停止**，告知用户修复
-- clawhub 不可用 → 记录为 warn，继续（§3 会使用 fallback）
+- clawhub 不可用 → 使用 `AskUserQuestion` 让用户选择（见下方）
 - 已有文件 → 标记需要备份，继续
 
-**如果 clawhub 不可用**，告知用户：
+**如果 clawhub 不可用**，使用 `AskUserQuestion` 询问用户：
 
-> "未检测到 clawhub（OpenClaw 技能包管理器）。将使用离线 fallback 或内联版本安装依赖 skill，功能完整，只是管理方式不同。如需安装 clawhub：`npm install -g clawhub`"
+**问题**："未检测到 clawhub（OpenClaw 技能包管理器）。你希望怎么处理？"
 
-### 1c. 开场状态提示
+**选项**：
+
+1. **先去安装 clawhub，装好后继续**
+   - 说明：运行 `npm install -g clawhub` 安装。clawhub 的优势：skill 可通过 `clawhub update` 统一更新版本，支持在线搜索和安装社区 skill，依赖管理更规范。安装好后告诉我"装好了"即可继续。
+
+2. **跳过，使用离线方式安装**
+   - 说明：直接从本 skill 自带的 fallback 文件复制安装。功能完全一样，但后续无法通过 clawhub 统一更新，需要手动管理 skill 版本。如果你只是想快速跑起来，选这个就行。
+
+用户选择 1 → 暂停部署，等待用户安装完成后继续
+用户选择 2 → 标记 `CLAWHUB_AVAILABLE=false`，继续部署
+
+### 1d. 开场状态提示
 
 环境检查通过后，输出：
 
@@ -105,6 +156,7 @@ cp "$SKILL_DIR/references/identity-template.md" "$WORKSPACE/IDENTITY.md"
 cp "$SKILL_DIR/references/goals-template.md" "$WORKSPACE/GOALS.md"
 cp "$SKILL_DIR/references/working-memory-template.md" "$WORKSPACE/working-memory.md"
 cp "$SKILL_DIR/references/long-term-memory-template.md" "$WORKSPACE/long-term-memory.md"
+cp "$SKILL_DIR/references/memory-architecture-template.md" "$WORKSPACE/memory/ARCHITECTURE.md"
 ```
 
 ### 2c. 创建目录结构 + 部署脚本 + 动态人格系统
@@ -147,93 +199,108 @@ done
 
 ---
 
-## §3 [REQUIRED] 依赖 Skill 安装（三级 Fallback）
+## §3 [REQUIRED] 引导对话（BOOTSTRAP）
 
-### 3a. 检查 clawhub 可用性
+**核心文件部署完成后，立即进入人格设定对话。这是整个流程中最重要的环节——先让用户定义 AI 的灵魂，再处理技术配置。**
+
+### 3a. 触发引导对话
+
+1. 读取 `$WORKSPACE/BOOTSTRAP.md`
+2. 告知用户：
+
+> "核心文件已部署完成！
+>
+> 接下来我们先聊一聊，分三步：
+> 1. **认识你** — 了解你是谁，在做什么，需要什么帮助
+> 2. **定义我的性格** — 通过场景问答，选择我的沟通风格
+> 3. **确认身份** — 给我起个名字
+>
+> 这次对话会塑造我的灵魂（SOUL.md），之后我就能按你的方式工作了。
+>
+> 聊完之后，我再帮你装依赖 Skill 和配置系统。"
+
+3. **立即开始执行 BOOTSTRAP.md 的 Phase 1**
+4. **BOOTSTRAP 完成后，继续执行 §4 安装依赖 Skill**
+
+---
+
+## §4 [REQUIRED] 依赖 Skill 安装（用户确认 + 两级 Fallback）
+
+### 4a. 检查 clawhub 可用性与已安装 Skill
 
 ```bash
 which clawhub || test -f ~/.openclaw/bin/clawhub
 CLAWHUB_AVAILABLE=$?
+
+# 检查哪些 skill 已安装
+for skill in evoclaw self-improving skill-vetter hdd sdd; do
+  test -f "$WORKSPACE/skills/$skill/SKILL.md" && echo "INSTALLED: $skill" || echo "NOT_INSTALLED: $skill"
+done
 ```
 
-### 3b. 安装 EvoClaw
+### 4b. 展示 Skill 清单并让用户选择
 
-检查 `$WORKSPACE/skills/evoclaw/SKILL.md` 是否存在：
+**在安装任何 skill 之前，必须先向用户展示完整清单，说明每个 skill 的用途，让用户确认要安装哪些。**
 
-**已安装** → 跳过，告知用户
+使用 `AskUserQuestion` 向用户展示以下信息并让用户多选：
 
-**未安装** → 按优先级尝试：
+**问题**："以下是灵魂框架的可选依赖 Skill，请选择要安装的："
 
-1. **Level 1 - clawhub 安装**（如果可用）
+**选项**（multiSelect: true）：
+
+1. **EvoClaw — 审批制进化治理**（推荐）
+   - 说明：AI 的 Identity/性格/价值观变更需要你批准才能生效，防止 AI 随意修改自己的灵魂。每次变更自动快照到 soul-revisions/，支持回滚。**这是灵魂框架的核心守护机制。**
+
+2. **Self-Improving — 自主学习 Agent**（推荐）
+   - 说明：AI 从你的纠正和反馈中自动学习规则，持久化到记忆中。下次遇到类似场景会自动应用，不需要你重复纠正。30 天未使用的规则自动归档。
+
+3. **Skill Vetter — 安全审查**
+   - 说明：在安装新 Skill 前自动执行安全审查，检查 Skill 的权限需求、文件访问范围、网络请求等，防止恶意或有风险的 Skill 进入系统。
+
+4. **HDD — 假设驱动开发**
+   - 说明：一种思维方法论。面对不确定性时，先提出假设，设计最小实验验证，快速迭代。适合探索性任务和问题诊断。
+
+5. **SDD — 场景驱动开发**
+   - 说明：一种思维方法论。从具体使用场景出发设计方案，确保每个功能都有真实场景支撑，避免过度设计。
+
+**对已安装的 skill，在选项描述中标注"（已安装，会跳过）"。**
+
+### 4c. 按用户选择安装
+
+对用户选中的每个 skill，按优先级尝试安装（已安装的跳过）：
+
+1. **Level 1 - clawhub 安装**（如果 clawhub 可用）
    ```bash
-   clawhub install evoclaw --force
+   clawhub install <skill-name> --force
    ```
 
 2. **Level 2 - 离线 Fallback**（如果 Level 1 失败或 clawhub 不可用）
    ```bash
-   cp -r "$SKILL_DIR/fallback/evoclaw" "$WORKSPACE/skills/"
+   cp -r "$SKILL_DIR/fallback/<skill-name>" "$WORKSPACE/skills/"
    ```
 
-3. **Level 3 - AGENTS.md 内联版本**
-   > "使用 AGENTS.md 内联版本。核心功能完整（Identity 变更需批准、用户纠正自动学习、SOUL.md 变更前自动快照）。与完整版的区别：内联版规则写在 AGENTS.md，完整版是独立 skill 可通过 clawhub 更新。"
+3. **安装失败处理**（如果 Level 1 和 Level 2 都失败）
+   - 告知用户安装失败，建议去 GitHub 搜索对应 skill 手动安装
+   - 提供搜索建议：`https://github.com/search?q=openclaw+<skill-name>`
+   - 记录警告，继续安装其他 skill
 
-### 3c. 安装 Self-Improving Agent
+### 4d. 验证结果
 
-检查 `$WORKSPACE/skills/self-improving/SKILL.md` 是否存在：
-
-**已安装** → 跳过，告知用户
-
-**未安装** → 按优先级尝试：
-
-1. **Level 1 - clawhub 安装**（如果可用）
-   ```bash
-   clawhub install self-improving --force
-   ```
-
-2. **Level 2 - 离线 Fallback**（如果 Level 1 失败或 clawhub 不可用）
-   ```bash
-   cp -r "$SKILL_DIR/fallback/self-improving" "$WORKSPACE/skills/"
-   ```
-
-3. **Level 3 - AGENTS.md 内联版本**
-   > "使用 AGENTS.md 内联版本。核心功能完整（用户纠正自动学习、规则持久化、30天未使用自动归档）。"
-
-### 3d. 安装思维方法论与项目管理 Skills
-
-以下 5 个 skill 使用同样的三级 Fallback 机制安装：
-
-| Skill | clawhub 名称 | Fallback 路径 | 功能 |
-|-------|-------------|-------------|------|
-| HDD | `hdd` | `fallback/hdd/` | 假设驱动开发 |
-| SDD | `sdd` | `fallback/sdd/` | 场景驱动开发 |
-| save-game | `save-game` | `fallback/save-game/` | 项目存档 |
-| load-game | `load-game` | `fallback/load-game/` | 项目恢复 |
-| project-skill-pairing | `project-skill-pairing` | `fallback/project-skill-pairing/` | 项目与 Skill 结对 |
-
-对每个 skill，按顺序尝试：
-1. **Level 1**: `clawhub install <name> --force`（如果可用）
-2. **Level 2**: `cp -r "$SKILL_DIR/fallback/<name>" "$WORKSPACE/skills/"`
-3. **Level 3**: 记录警告，继续下一个
-
-### 3e. 验证结果
-
-安装完成后，逐项报告：
+安装完成后，逐项报告用户选中的 skill 的安装结果：
 
 ```
-✓ EvoClaw: [installed from clawhub | installed from fallback | using inline version]
-✓ Self-Improving: [installed from clawhub | installed from fallback | using inline version]
-✓ HDD: [installed from clawhub | installed from fallback | ⚠️ not installed]
-✓ SDD: [installed from clawhub | installed from fallback | ⚠️ not installed]
-✓ save-game: [installed from clawhub | installed from fallback | ⚠️ not installed]
-✓ load-game: [installed from clawhub | installed from fallback | ⚠️ not installed]
-✓ project-skill-pairing: [installed from clawhub | installed from fallback | ⚠️ not installed]
+✓ EvoClaw: [installed from clawhub | installed from fallback | ⚠️ failed | skipped (not selected)]
+✓ Self-Improving: [installed from clawhub | installed from fallback | ⚠️ failed | skipped (not selected)]
+✓ Skill Vetter: [installed from clawhub | installed from fallback | ⚠️ not installed | skipped (not selected)]
+✓ HDD: [installed from clawhub | installed from fallback | ⚠️ not installed | skipped (not selected)]
+✓ SDD: [installed from clawhub | installed from fallback | ⚠️ not installed | skipped (not selected)]
 ```
 
 ---
 
-## §4 [REQUIRED] 配置系统
+## §5 [REQUIRED] 配置系统
 
-### 4a. EvoClaw 治理配置
+### 5a. EvoClaw 治理配置
 
 写入 `$WORKSPACE/memory/evoclaw-state.json`：
 
@@ -249,7 +316,7 @@ CLAWHUB_AVAILABLE=$?
 
 验证 JSON 可解析。
 
-### 4b. Self-Improving Agent 初始化
+### 5b. Self-Improving Agent 初始化
 
 确保目录和文件存在：
 
@@ -293,7 +360,7 @@ mkdir -p ~/self-improving/{projects,domains,archive}
 (none yet)
 ```
 
-### 4c. Heartbeat 配置
+### 5c. Heartbeat 配置
 
 使用 `openclaw config set` 更新 heartbeat 设置：
 
@@ -305,7 +372,7 @@ openclaw config set agents.defaults.heartbeat.directPolicy "allow"
 
 如果 `openclaw config set` 不可用，直接编辑 `openclaw.json`，确保 `agents.defaults.heartbeat` 包含 `every: "1h"`, `target: "last"`, `directPolicy: "allow"`。
 
-### 4d. 向量搜索配置
+### 5d. 向量搜索配置
 
 **没有向量搜索的记忆系统是摆设。此步骤不可跳过。**
 
@@ -365,7 +432,7 @@ memorySearch: {
 
 验证：再次执行 `memory_search(query="test")` 确认可用。如果 memory/ 下还没有文件，告知用户："向量搜索已就绪，等积累了笔记后就能搜到了。"
 
-### 4e. Git 版本管理初始化
+### 5e. Git 版本管理初始化
 
 检查 `$WORKSPACE/.git/` 是否存在：
 
@@ -393,9 +460,9 @@ git add -A && git commit -m "init: openclaw-soul workspace"
 
 ---
 
-## §5 [FINAL] 验证 + 启动
+## §6 [FINAL] 验证 + 激活
 
-### 5a. 核心验证清单（10 项）
+### 6a. 核心验证清单（10 项）
 
 逐项检查并报告 pass/fail：
 
@@ -406,8 +473,8 @@ git add -A && git commit -m "init: openclaw-soul workspace"
 | 3 | BOOTSTRAP.md 非空 | `test -s $WORKSPACE/BOOTSTRAP.md` |
 | 4 | USER.md 非空 | `test -s $WORKSPACE/USER.md` |
 | 5 | IDENTITY.md 非空 | `test -s $WORKSPACE/IDENTITY.md` |
-| 6 | EvoClaw 已安装 | `test -f $WORKSPACE/skills/evoclaw/SKILL.md` 或确认使用内联版本 |
-| 7 | Self-Improving 已安装 | `test -f $WORKSPACE/skills/self-improving/SKILL.md` 或确认使用内联版本 |
+| 6 | EvoClaw 已安装 | `test -f $WORKSPACE/skills/evoclaw/SKILL.md` |
+| 7 | Self-Improving 已安装 | `test -f $WORKSPACE/skills/self-improving/SKILL.md` |
 | 8 | evoclaw-state.json 有效 | 读取并验证 `mode=advisory` |
 | 9 | Heartbeat 配置已写入 | 读取 openclaw.json 确认 heartbeat 字段 |
 | 10 | Git 已初始化 | `test -d $WORKSPACE/.git` |
@@ -428,37 +495,16 @@ git add -A && git commit -m "init: openclaw-soul workspace"
 ```
 
 **判断**：
-- 全部 pass → 继续触发 BOOTSTRAP
+- 全部 pass → 继续执行 §7 激活系统
 - 任何 fail → 列出失败项，提示用户手动修复
-
-### 5b. 触发引导对话
-
-**只有 5a 全部通过后才执行。**
-
-1. 读取 `$WORKSPACE/BOOTSTRAP.md`
-2. 告知用户：
-
-> "部署完成了！
->
-> 已安装：宪法、可进化灵魂、心跳协议、六层记忆、思维方法论、跨会话存档、目标管理、EvoClaw 治理、Self-Improving Agent。
->
-> 接下来我们聊一聊，分三步：
-> 1. **认识你** — 了解你是谁，在做什么，需要什么帮助
-> 2. **定义我的性格** — 通过场景问答，选择我的沟通风格
-> 3. **确认身份** — 给我起个名字
->
-> 这次对话会塑造我的灵魂（SOUL.md），之后我就能按你的方式工作了。"
-
-3. **立即开始执行 BOOTSTRAP.md 的 Phase 1**
-4. **BOOTSTRAP 完成后，继续执行 §6 激活系统**
 
 ---
 
-## §6 [ACTIVATION] 激活系统
+## §7 [ACTIVATION] 激活系统
 
 **BOOTSTRAP 对话完成后，必须执行此步骤才能让系统真正"活起来"。**
 
-### 6a. 配置自动加载
+### 8a. 配置自动加载
 
 确保每次对话都自动加载核心文件到 system prompt：
 
@@ -493,11 +539,11 @@ openclaw config set agents.defaults.systemPrompt.files '["~/.openclaw/workspace/
 openclaw config get agents.defaults.systemPrompt.files || grep -A 10 '"systemPrompt"' "$WORKSPACE/../openclaw.json"
 ```
 
-### 6b. 启用心跳机制
+### 8b. 启用心跳机制
 
 **这是让 AI 主动说话的关键配置。**
 
-#### 6b.1 配置心跳参数
+#### 8b.1 配置心跳参数
 
 ```bash
 # 启用心跳（最关键的一步）
@@ -535,7 +581,7 @@ openclaw config set agents.defaults.heartbeat.prompt "$HEARTBEAT_PROMPT"
 }
 ```
 
-#### 6b.2 询问用户定时任务需求
+#### 8b.2 询问用户定时任务需求
 
 **在安装定时任务前，先了解用户的使用场景和需求。**
 
@@ -575,7 +621,7 @@ openclaw config set agents.defaults.heartbeat.prompt "$HEARTBEAT_PROMPT"
 
 **multiSelect**: true（允许多选）
 
-#### 6b.3 安装基础定时任务（必需）
+#### 8b.3 安装基础定时任务（必需）
 
 **无论用户选择什么，这些基础任务都必须安装。**
 
@@ -602,9 +648,9 @@ if [ -f "$WORKSPACE/scripts/auto-commit.sh" ]; then
 fi
 ```
 
-#### 6b.4 安装用户选择的定时任务
+#### 8b.4 安装用户选择的定时任务
 
-**根据用户在 6b.2 的选择，安装对应的定时任务。**
+**根据用户在 7b.2 的选择，安装对应的定时任务。**
 
 ```bash
 # 根据用户选择安装定时任务
@@ -648,7 +694,7 @@ if [[ "$USER_CHOICE" == *"暂时不需要"* ]]; then
 fi
 ```
 
-#### 6b.5 验证心跳配置
+#### 8b.5 验证心跳配置
 
 ```bash
 # 检查配置
@@ -668,7 +714,7 @@ else
 fi
 ```
 
-### 6c. 配置向量索引自动更新
+### 8c. 配置向量索引自动更新
 
 **记忆文件变更后自动重建索引，确保搜索结果最新。**
 
@@ -695,11 +741,11 @@ openclaw config set memorySearch.indexStrategy "incremental"
 }
 ```
 
-### 6f. 配置记忆系统优化（可选但推荐）
+### 8d. 配置记忆系统优化（可选但推荐）
 
 **这是记忆系统的高级优化，包含渐进式披露、智能分类、智能去重、衰减晋升机制。**
 
-#### 6f.1 询问用户是否需要优化
+#### 8d.1 询问用户是否需要优化
 
 使用 `AskUserQuestion` 询问用户：
 
@@ -715,7 +761,7 @@ openclaw config set memorySearch.indexStrategy "incremental"
    - 说明：保持基础记忆系统，稍后可以随时配置
    - 适合：想先体验基础功能的用户
 
-#### 6f.2 部署优化脚本（如果用户选择"是的，帮我配置"）
+#### 8d.2 部署优化脚本（如果用户选择"是的，帮我配置"）
 
 ```bash
 # 复制优化脚本到 workspace/scripts/
@@ -730,7 +776,7 @@ else
 fi
 ```
 
-#### 6f.3 更新 AGENTS.md（添加记忆管理规则）
+#### 8d.3 更新 AGENTS.md（添加记忆管理规则）
 
 ```bash
 # 检查 AGENTS.md 是否已包含记忆管理规则
@@ -741,7 +787,7 @@ if ! grep -q "§2 记忆管理规则" "$WORKSPACE/AGENTS.md"; then
 fi
 ```
 
-#### 6f.4 配置定时任务
+#### 8d.4 配置定时任务
 
 ```bash
 # 1. 每天凌晨 3:00 更新记忆衰减状态
@@ -759,7 +805,7 @@ if [ -f "$WORKSPACE/scripts/merge-daily-transcript.js" ]; then
 fi
 ```
 
-#### 6f.5 配置自动加载 L0 索引
+#### 8d.5 配置自动加载 L0 索引
 
 ```bash
 # 更新 systemPrompt.files，添加 L0 索引
@@ -768,7 +814,7 @@ openclaw config set agents.defaults.systemPrompt.files '["~/.openclaw/workspace/
 echo "✓ 已配置自动加载 L0 记忆索引"
 ```
 
-#### 6f.6 初始化记忆索引
+#### 8d.6 初始化记忆索引
 
 ```bash
 # 构建初始索引
@@ -778,7 +824,7 @@ if [ -f "$WORKSPACE/scripts/memory-index-builder.js" ]; then
 fi
 ```
 
-#### 6f.7 告知用户优化效果
+#### 8d.7 告知用户优化效果
 
 > "记忆系统优化已完成！
 >
@@ -796,7 +842,7 @@ fi
 > - 明天运行健康检查：`node ~/.openclaw/workspace/scripts/memory-health-check.js`
 > - 查看记忆索引：`cat ~/.openclaw/workspace/memory/metadata/L0-index.md`"
 
-### 6g. 验证激活状态
+### 8e. 验证激活状态
 
 **逐项检查所有激活配置是否生效。**
 
@@ -857,11 +903,11 @@ else
 fi
 ```
 
-### 6d. 首次使用指南
+### 8f. 首次使用指南
 
 **激活完成后，告知用户如何验证系统是否正常工作。**
 
-根据用户在 6b.2 选择的定时任务，动态生成提示信息：
+根据用户在 7b.2 选择的定时任务，动态生成提示信息：
 
 **基础提示**（所有用户）：
 
@@ -912,8 +958,6 @@ fi
 > 2. `我是谁？` — 查看你的身份档案（读取 IDENTITY.md）
 > 3. `你的性格是什么？` — 查看我的灵魂（读取 SOUL.md）
 > 4. `回忆一下我们刚才讨论的内容` — 测试记忆召回
-> 5. `/save-game` — 保存当前项目上下文
-> 6. `/load-game` — 恢复之前的项目
 >
 > **如果心跳没有按预期工作**：
 > 1. 运行 `crontab -l | grep openclaw` 检查定时任务是否安装
@@ -926,9 +970,9 @@ fi
 
 ---
 
-## §7 [TROUBLESHOOTING] 故障排查
+## §8 [TROUBLESHOOTING] 故障排查
 
-### 7a. 心跳不工作
+### 8a. 心跳不工作
 
 **症状**：1 小时后 AI 没有主动发起对话。
 
@@ -963,12 +1007,12 @@ journalctl -t openclaw-heartbeat --since "1 hour ago"
 | 问题 | 原因 | 解决方案 |
 |------|------|---------|
 | `enabled: false` | 心跳未启用 | `openclaw config set agents.defaults.heartbeat.enabled true` |
-| cron 任务不存在 | 定时任务未安装 | 重新执行 §6b.2 |
+| cron 任务不存在 | 定时任务未安装 | 重新执行 §7b.2 |
 | `openclaw: command not found` | CLI 未安装或不在 PATH | 安装 openclaw CLI 或配置 PATH |
-| 心跳触发但无响应 | `prompt` 未配置 | 重新执行 §6b.1，确保 `prompt` 字段包含 HEARTBEAT.md 内容 |
+| 心跳触发但无响应 | `prompt` 未配置 | 重新执行 §7b.1，确保 `prompt` 字段包含 HEARTBEAT.md 内容 |
 | 权限被拒绝 | `directPolicy` 未设置 | `openclaw config set agents.defaults.heartbeat.directPolicy "allow"` |
 
-### 7b. 记忆召回失败
+### 8b. 记忆召回失败
 
 **症状**：问"回忆一下 XX"时，AI 说找不到相关记忆。
 
@@ -1000,13 +1044,13 @@ openclaw memory reindex
 
 | 问题 | 原因 | 解决方案 |
 |------|------|---------|
-| `embedding provider not configured` | 未配置 embedding API | 重新执行 §4d，配置 Gemini/SiliconFlow/OpenAI |
+| `embedding provider not configured` | 未配置 embedding API | 重新执行 §5d，配置 Gemini/SiliconFlow/OpenAI |
 | `API key invalid` | API key 错误或过期 | 更新 `openclaw.json` 中的 `memorySearch.remote.apiKey` |
 | 搜索返回空结果 | 索引未建立或过期 | `openclaw memory reindex` |
 | memory/ 目录为空 | 还没有对话记录 | 正常现象，多对话几次后会积累 |
-| `extraPaths` 未配置 | 搜索范围不包含记忆目录 | 重新执行 §4d，配置 `extraPaths` |
+| `extraPaths` 未配置 | 搜索范围不包含记忆目录 | 重新执行 §5d，配置 `extraPaths` |
 
-### 7c. SOUL 没有加载
+### 8c. SOUL 没有加载
 
 **症状**：AI 的行为不符合 SOUL.md 中定义的性格。
 
@@ -1033,12 +1077,12 @@ ls -l "$WORKSPACE/SOUL.md"
 
 | 问题 | 原因 | 解决方案 |
 |------|------|---------|
-| `systemPrompt.files` 为空 | 自动加载未配置 | 重新执行 §6a |
+| `systemPrompt.files` 为空 | 自动加载未配置 | 重新执行 §7a |
 | SOUL.md 不存在 | 部署失败或文件被删除 | 重新执行 §2 部署文件 |
 | 文件权限错误 | 文件不可读 | `chmod 644 "$WORKSPACE/SOUL.md"` |
 | 配置了但不生效 | OpenClaw 版本不支持 | 检查 OpenClaw 版本，升级到最新版 |
 
-### 7d. 记忆归档不执行
+### 8d. 记忆归档不执行
 
 **症状**：memory/daily/ 下的文件一直不合并到 transcripts/。
 
@@ -1065,12 +1109,12 @@ journalctl -t openclaw-memory --since "24 hours ago"  # Linux
 
 | 问题 | 原因 | 解决方案 |
 |------|------|---------|
-| cron 任务不存在 | 定时任务未安装 | 重新执行 §6c |
+| cron 任务不存在 | 定时任务未安装 | 重新执行 §7c |
 | 脚本不存在 | 部署失败 | 重新执行 §2c |
 | `node: command not found` | Node.js 未安装 | 安装 Node.js：`brew install node`（macOS）或 `apt install nodejs`（Linux） |
 | 脚本执行报错 | 脚本逻辑问题 | 查看错误信息，检查 memory/daily/ 目录权限 |
 
-### 7e. Git 自动提交不工作
+### 8e. Git 自动提交不工作
 
 **症状**：memory/ 下的文件变更没有自动提交到 Git。
 
@@ -1101,12 +1145,12 @@ cd "$WORKSPACE" && git log --oneline --since="1 day ago"
 
 | 问题 | 原因 | 解决方案 |
 |------|------|---------|
-| cron 任务不存在 | 定时任务未安装 | 重新执行 §6d |
+| cron 任务不存在 | 定时任务未安装 | 重新执行 §7b.3 |
 | 脚本不可执行 | 权限问题 | `chmod +x "$WORKSPACE/scripts/auto-commit.sh"` |
-| Git 未初始化 | §4e 未执行 | 重新执行 §4e |
+| Git 未初始化 | §5e 未执行 | 重新执行 §5e |
 | `git: command not found` | Git 未安装 | 安装 Git：`brew install git`（macOS）或 `apt install git`（Linux） |
 
-### 7f. 完整健康检查脚本
+### 8f. 完整健康检查脚本
 
 **一键检查所有组件状态。**
 
@@ -1161,7 +1205,7 @@ fi
 
 # 7. 依赖 Skills
 echo -e "\n[7/7] 依赖 Skills"
-for skill in evoclaw self-improving hdd sdd save-game load-game project-skill-pairing; do
+for skill in evoclaw self-improving skill-vetter hdd sdd; do
   test -f "$WORKSPACE/skills/$skill/SKILL.md" && echo "  ✓ $skill" || echo "  ⚠️  $skill 未安装"
 done
 
@@ -1176,4 +1220,4 @@ bash "$WORKSPACE/scripts/health-check.sh"
 
 ---
 
-_openclaw-soul v2.2.0 — Now with activation system and troubleshooting guide. Your AI truly comes alive._
+_openclaw-soul v3.0.0 — Lightweight, growable soul. Slimmed AGENTS.md (-79%), reordered flow (BOOTSTRAP first), user-controlled skill install, permission check, two-level fallback._
