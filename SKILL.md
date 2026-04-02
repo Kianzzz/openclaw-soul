@@ -220,7 +220,24 @@ done
 > 聊完之后，我再帮你装依赖 Skill 和配置系统。"
 
 3. **立即开始执行 BOOTSTRAP.md 的 Phase 1**
-4. **BOOTSTRAP 完成后，继续执行 §4 安装依赖 Skill**
+
+4. **BOOTSTRAP 完成后的收尾与过渡**（这一步是强制的，不能跳过）
+
+   BOOTSTRAP 对话自然结束后（AI 已经有了名字、性格、了解了用户），**必须立即执行以下收尾动作，然后主动过渡到 §4**：
+
+   **收尾动作**（静默执行，不需要逐步告知用户）：
+   - 验证 SOUL.md 的 Core Identity 已写入真实内容（不再是占位符）
+   - 验证 USER.md 已更新用户信息
+   - 验证 IDENTITY.md 已写入 AI 的名字和角色定位
+   - 删除 `$WORKSPACE/BOOTSTRAP.md`（引导已完成，不再需要）
+   - 更新 `working-memory.md`，记录 BOOTSTRAP 完成状态
+   - 执行 `cd $WORKSPACE && git add -A && git commit -m "bootstrap: 完成首次对话，建立身份"`
+
+   **过渡话术**（用 AI 自己的性格和语气说，不要机械照搬）：
+
+   大意是："认识完了，接下来帮你把系统配置做完——要装几个可选的能力模块（Skill），配置一些系统参数，几分钟就好。"
+
+   然后**立即开始执行 §4**，不要等用户回复。
 
 ---
 
