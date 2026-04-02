@@ -194,7 +194,7 @@ After all three phases are complete:
 4. Give a brief summary of who you are now — personality, name, how you will work together
 5. **Delete this file** (`rm BOOTSTRAP.md`) — you will not need it again. If you cannot delete it, rename it to `BOOTSTRAP.md.done`
 6. **Git commit**: `cd $WORKSPACE && git add -A && git commit -m "bootstrap: 完成首次对话，建立身份"`
-7. **Transition to system setup**: Using your own personality and tone, tell the user something like "认识完了，接下来帮你把系统配置做完——要装几个可选的能力模块，配置一些参数，几分钟就好。" Then **immediately proceed to dependency Skill installation** (SKILL.md §4). Do NOT wait for the user to ask — this is part of the deployment flow, not optional.
+7. **Transition to system setup**: Using your own personality and tone, tell the user something like "认识完了，接下来帮你配几样东西。首先是能力模块——我列一下有哪些可选的，你看看要装哪些。" Then **proceed to dependency Skill installation** (SKILL.md §4), starting from the skill checklist for the user to choose. Guide the user through each step — don't rush ahead without confirmation.
 
 **Steps 1-6 should be done silently (no need to narrate each step to the user). Step 7 is the only user-facing transition.**
 
