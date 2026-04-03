@@ -317,6 +317,15 @@ done
 
 ## §5 [REQUIRED] 配置系统
 
+**配置写入策略**：OpenClaw 不同版本的配置结构可能不同，`openclaw config set` 支持的键名也不统一。所有配置操作统一使用以下策略：
+
+1. 先尝试 `openclaw config set <key> <value>`
+2. 如果命令报错（键名不存在、格式不支持等），**直接读取并编辑 `~/.openclaw/openclaw.json`**
+3. 编辑 JSON 时，先用 `openclaw config get` 或 `cat openclaw.json` 查看当前结构，**按实际结构写入**，不假设固定的嵌套路径
+4. 写入后用 `openclaw status` 验证配置是否有效，如果报校验错误，用 `openclaw doctor --fix` 修复
+
+**注意**：不要在 `openclaw.json` 顶层写入 `memorySearch` 等字段——这些在新版本中可能已移到 `agents.defaults` 下或有不同的结构。始终以 `openclaw status` 校验通过为准。
+
 ### 5a. EvoClaw 治理配置
 
 写入 `$WORKSPACE/memory/evoclaw-state.json`：
@@ -379,15 +388,16 @@ mkdir -p ~/self-improving/{projects,domains,archive}
 
 ### 5c. Heartbeat 配置
 
-使用 `openclaw config set` 更新 heartbeat 设置：
+按配置写入策略，尝试设置 heartbeat 参数：
 
 ```bash
-openclaw config set agents.defaults.heartbeat.every "1h"
-openclaw config set agents.defaults.heartbeat.target "last"
-openclaw config set agents.defaults.heartbeat.directPolicy "allow"
+# 尝试 openclaw config set，失败则直接编辑 openclaw.json
+openclaw config set agents.defaults.heartbeat.every "1h" 2>/dev/null || echo "FALLBACK_TO_JSON"
+openclaw config set agents.defaults.heartbeat.target "last" 2>/dev/null || echo "FALLBACK_TO_JSON"
+openclaw config set agents.defaults.heartbeat.directPolicy "allow" 2>/dev/null || echo "FALLBACK_TO_JSON"
 ```
 
-如果 `openclaw config set` 不可用，直接编辑 `openclaw.json`，确保 `agents.defaults.heartbeat` 包含 `every: "1h"`, `target: "last"`, `directPolicy: "allow"`。
+如果任一命令输出 `FALLBACK_TO_JSON`，读取 `openclaw.json` 的实际结构，将 heartbeat 配置写入对应位置。写入后执行 `openclaw status` 验证。
 
 ### 5d. 向量搜索配置
 
@@ -735,29 +745,14 @@ fi
 
 **记忆文件变更后自动重建索引，确保搜索结果最新。**
 
-```bash
-# 启用自动索引
-openclaw config set memorySearch.autoIndex true
+按 §5 配置写入策略操作。先尝试 `openclaw config set`，失败则读取 `openclaw.json` 实际结构后写入对应位置。
 
-# 配置监听路径
-openclaw config set memorySearch.watchPaths '["memory/","AGENTS.md","SOUL.md"]'
+需要配置的字段：
+- `autoIndex`: true
+- `watchPaths`: ["memory/", "AGENTS.md", "SOUL.md"]
+- `indexStrategy`: "incremental"
 
-# 配置索引更新策略（增量更新，不是全量重建）
-openclaw config set memorySearch.indexStrategy "incremental"
-```
-
-如果 `openclaw config` 不可用，编辑 `openclaw.json`：
-
-```json
-{
-  "memorySearch": {
-    "autoIndex": true,
-    "watchPaths": ["memory/", "AGENTS.md", "SOUL.md"],
-    "indexStrategy": "incremental"
-  }
-}
-```
-
+**注意**：不要假设这些字段在 JSON 顶层。先用 `openclaw config get memorySearch` 或 `cat openclaw.json` 查看实际位置，可能在 `agents.defaults.memorySearch` 下。写入后执行 `openclaw status` 验证，如果报校验错误用 `openclaw doctor --fix` 修复。
 ### 8d. 配置记忆系统优化（可选但推荐）
 
 **这是记忆系统的高级优化，包含渐进式披露、智能分类、智能去重、衰减晋升机制。**
